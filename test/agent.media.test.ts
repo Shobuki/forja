@@ -395,6 +395,7 @@ describe("SupportAgent.alarm — multimodal last message (Task 6.3)", () => {
     streamTextMock.mockImplementation(() => makeStreamResult("ok"));
     vi.spyOn(MessagesRepo.prototype, "append").mockImplementation(async () => {
       await gate;
+      return "msg-1";
     });
     vi.spyOn(MessagesRepo.prototype, "lastN").mockResolvedValue([
       { role: "user", content: "tour + fecha + 4 pax + hotel" },
@@ -430,6 +431,7 @@ describe("SupportAgent.alarm — multimodal last message (Task 6.3)", () => {
     streamTextMock.mockImplementation(() => makeStreamResult("ok"));
     vi.spyOn(MessagesRepo.prototype, "append").mockImplementation(async () => {
       await gate;
+      return "msg-1";
     });
     vi.spyOn(MessagesRepo.prototype, "lastN").mockResolvedValue([
       { role: "user", content: "hola" },
