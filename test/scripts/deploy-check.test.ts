@@ -19,6 +19,11 @@ describe("validateDeployConfig", () => {
     expect(validateDeployConfig({ ...rest, BOT_TIER: "free" }).ok).toBe(true);
   });
 
+  it("passes with a MiMo API key", () => {
+    const { ANTHROPIC_API_KEY, ...rest } = full;
+    expect(validateDeployConfig({ ...rest, MIMO_API_KEY: "sk-mimo" }).ok).toBe(true);
+  });
+
   it("fails when ANTHROPIC_API_KEY is missing", () => {
     const { ANTHROPIC_API_KEY, ...rest } = full;
     const r = validateDeployConfig(rest);

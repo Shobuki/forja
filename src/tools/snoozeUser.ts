@@ -10,7 +10,7 @@ import { ConversationsRepo } from "../db/conversations";
 export function snoozeUserTool(env: Env, getConversationId: () => string | null) {
   return tool({
     description:
-      "Manda esta conversación a DESCANSAR (cooldown): el bot ignorará todos sus mensajes por los minutos indicados (default 60). Úsala cuando el usuario esté insultando o siendo abusivo, mande spam sin sentido una y otra vez, claramente sea otro bot automatizado, o esté usando al bot como un ChatGPT gratis (varias preguntas seguidas que no tienen nada que ver con el negocio: tareas, recetas, cultura general, código random). Antes de usarla manda UNA última respuesta breve y amable (en el caso ChatGPT: invítalo a la comunidad si le interesa aprender de IA y usa unos 120 minutos); después de llamarla, no digas nada más.",
+      "Put this conversation into a cooldown: the bot will ignore all messages for the requested minutes (default 60). Use it for insults, abusive behavior, repeated meaningless spam, another automated bot, or treating the bot as a free ChatGPT with unrelated questions. Before using it, send ONE final brief and kind reply; for ChatGPT-style use, invite the person to the AI community and use about 120 minutes. After calling it, say nothing else.",
     inputSchema: z.object({
       minutes: z.number().int().min(15).max(1440).default(60),
       reason: z

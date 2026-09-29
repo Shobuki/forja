@@ -27,19 +27,19 @@ export async function renderLeads(env: Env): Promise<string> {
   // Columnas: núcleo (fecha, nombre, contacto) + o bien las columnas del nicho
   // (leídas de metadata) o bien el "Resumen" genérico + estado (re-etiquetado).
   const cols: Col[] = [
-    { h: "Fecha", w: "94px", cell: (l) => `<span class="text-dim">${fmtDate(l.created_at)}</span>` },
-    { h: "Nombre", w: "minmax(120px,1.1fr)", cell: (l) => `<span class="text-cream" style="display:flex;align-items:center;gap:7px"><i data-lucide="chevron-right" width="13" height="13" class="chev" style="flex:none;transition:transform .12s ease"></i>${esc(l.name) || "(sin nombre)"}</span>` },
-    { h: "Contacto", w: "minmax(110px,1fr)", cell: (l) => `<span class="text-muted">${esc(l.contact) || "—"}</span>` },
+    { h: "Date", w: "94px", cell: (l) => `<span class="text-dim">${fmtDate(l.created_at)}</span>` },
+    { h: "Name", w: "minmax(120px,1.1fr)", cell: (l) => `<span class="text-cream" style="display:flex;align-items:center;gap:7px"><i data-lucide="chevron-right" width="13" height="13" class="chev" style="flex:none;transition:transform .12s ease"></i>${esc(l.name) || "(unnamed)"}</span>` },
+    { h: "Contact", w: "minmax(110px,1fr)", cell: (l) => `<span class="text-muted">${esc(l.contact) || "—"}</span>` },
   ];
   if (niche.columns.length) {
     for (const c of niche.columns) {
       cols.push({ h: c.label, w: "minmax(78px,.85fr)", cell: (_l, meta) => `<span class="text-muted truncate">${esc(meta[c.key]) || "—"}</span>` });
     }
   } else {
-    cols.push({ h: "Resumen · click para ver detalle", w: "minmax(200px,1.8fr)", cell: (l) => `<span class="text-muted truncate">${esc(l.intent)}</span>` });
+    cols.push({ h: "Summary · click for details", w: "minmax(200px,1.8fr)", cell: (l) => `<span class="text-muted truncate">${esc(l.intent)}</span>` });
   }
   cols.push({
-    h: "Estado",
+    h: "Status",
     w: "132px",
     cell: (l) => `<form method="POST" action="/admin/leads/${l.id}/status" onclick="event.stopPropagation()">
       <select name="status" onchange="this.form.submit()"
@@ -60,9 +60,9 @@ export async function renderLeads(env: Env): Promise<string> {
       const fullDate = fmtDateTime(l.created_at);
       const convLink = l.conversation_id
         ? `<a href="/admin/conversations?c=${encodeURIComponent(l.conversation_id)}" class="text-accent" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;text-decoration:none">
-             <i data-lucide="messages-square" width="13" height="13"></i> Ver conversación completa
+             <i data-lucide="messages-square" width="13" height="13"></i> View full conversation
            </a>`
-        : `<span class="text-dim" style="font-size:11.5px">Sin conversación ligada</span>`;
+        : `<span class="text-dim" style="font-size:11.5px">No linked conversation</span>`;
       // Detalle: todos los campos del nicho (metadata) + resumen IA + notas.
       const metaRows = Object.entries(meta)
         .map(([k, v]) => `<span class="text-muted" style="font-size:12px"><span class="text-dim">${esc(k)}:</span> ${esc(v)}</span>`)
@@ -74,13 +74,13 @@ export async function renderLeads(env: Env): Promise<string> {
         </div>
         <div class="lead-detail" style="display:none;padding:4px 18px 20px 18px;background:var(--bg)">
           <div style="max-width:760px;display:flex;flex-direction:column;gap:14px;padding-top:14px">
-            ${metaRows ? `<div><div style="font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin-bottom:6px">Datos</div><div style="display:flex;flex-wrap:wrap;gap:6px 18px">${metaRows}</div></div>` : ""}
+            ${metaRows ? `<div><div style="font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin-bottom:6px">Data</div><div style="display:flex;flex-wrap:wrap;gap:6px 18px">${metaRows}</div></div>` : ""}
             <div>
-              <div style="font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin-bottom:6px">Resumen de la IA</div>
+              <div style="font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin-bottom:6px">AI summary</div>
               <div class="text-cream" style="font-size:13px;line-height:1.55;white-space:pre-wrap">${esc(l.intent)}</div>
             </div>
             ${l.notes ? `<div>
-              <div style="font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin-bottom:6px">Notas</div>
+              <div style="font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin-bottom:6px">Notes</div>
               <div class="text-muted" style="font-size:12.5px;line-height:1.5;white-space:pre-wrap">${esc(l.notes)}</div>
             </div>` : ""}
             <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding-top:2px">
@@ -93,7 +93,7 @@ export async function renderLeads(env: Env): Promise<string> {
     })
     .join("");
 
-  const empty = `<div style="padding:40px 18px;text-align:center" class="text-dim text-[12.5px]">Aún no hay ${esc(niche.recordPlural.toLowerCase())}.</div>`;
+  const empty = `<div style="padding:40px 18px;text-align:center" class="text-dim text-[12.5px]">No ${esc(niche.recordPlural.toLowerCase())} yet.</div>`;
   const header = cols
     .map((c) => `<span>${esc(c.h)}</span>`)
     .join("");
@@ -102,7 +102,7 @@ export async function renderLeads(env: Env): Promise<string> {
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
       <h2 class="font-display font-semibold text-[15px] text-cream">${esc(niche.recordPlural)}</h2>
       <a href="/admin/leads/export.csv" class="ghostbtn" style="display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);color:var(--muted);padding:9px 14px;font-size:12.5px;transition:all .12s ease">
-        <i data-lucide="download" width="14" height="14"></i> Exportar CSV
+        <i data-lucide="download" width="14" height="14"></i> Export CSV
       </a>
     </div>
     <div class="bg-panel border border-line" style="overflow-x:auto">

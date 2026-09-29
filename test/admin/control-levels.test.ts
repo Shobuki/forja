@@ -69,9 +69,9 @@ describe("valueToLevel / levelToValue round-trips", () => {
     });
   }
 
-  it("maps the known speed examples (5 <-> Rápido)", () => {
-    expect(valueToLevel(SETTING_KEYS.bufferSeconds, "5")).toBe("Rápido");
-    expect(levelToValue(SETTING_KEYS.bufferSeconds, "Rápido")).toBe("5");
+  it("maps the known speed examples (5 <-> Fast)", () => {
+    expect(valueToLevel(SETTING_KEYS.bufferSeconds, "5")).toBe("Fast");
+    expect(levelToValue(SETTING_KEYS.bufferSeconds, "Fast")).toBe("5");
   });
 
   it("falls back to the first option for empty/unknown values", () => {

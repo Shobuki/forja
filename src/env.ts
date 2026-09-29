@@ -24,18 +24,25 @@ export interface Env {
   // LLM provider for the chat brain: "anthropic" (default) | "openai".
   // If unset and only OPENAI_API_KEY is present, auto-selects "openai".
   // (Voice transcription + embeddings always run on Cloudflare Workers AI.)
-  LLM_PROVIDER?: "anthropic" | "openai";
+  LLM_PROVIDER?: "anthropic" | "openai" | "xai" | "mimo";
+  // Optional provider used only by the public portfolio web chat. This uses
+  // the native Workers AI binding and does not require an external API key.
+  WEBCHAT_LLM_PROVIDER?: "workers-ai";
+  WORKERS_AI_MODEL_FAST?: string;
   // Optional per-tier model id overrides (fast = cheap default, smart = upgrade).
   ANTHROPIC_MODEL_FAST?: string;
   ANTHROPIC_MODEL_SMART?: string;
   OPENAI_MODEL_FAST?: string;
   OPENAI_MODEL_SMART?: string;
+  MIMO_MODEL_FAST?: string;
+  MIMO_MODEL_SMART?: string;
   // Optional LLM base URLs (Cloudflare AI Gateway, etc.). Ignored if empty.
   // Anthropic SDK appends `/v1/messages` — use the provider root, e.g.
   // https://gateway.ai.cloudflare.com/v1/<account>/<gateway>/anthropic
   ANTHROPIC_BASE_URL?: string;
   OPENAI_BASE_URL?: string;
   XAI_BASE_URL?: string;
+  MIMO_BASE_URL?: string;
   // Optional AI Gateway token → sent as `cf-aig-authorization: Bearer …`.
   CF_AIG_TOKEN?: string;
   // Pin new Durable Objects (LLM egress lives there). wnam|enam|weur|…
@@ -45,8 +52,9 @@ export interface Env {
   DASHBOARD_BASE_URL: string;
 
   // Secrets (member-set via wrangler secret put)
-  ANTHROPIC_API_KEY: string;
+  ANTHROPIC_API_KEY?: string;
   OPENAI_API_KEY?: string;  // alternative LLM provider (see LLM_PROVIDER)
+  MIMO_API_KEY?: string;    // Xiaomi MiMo OpenAI-compatible API key
   RESEND_API_KEY?: string;
   TELEGRAM_BOT_TOKEN?: string;
   MANYCHAT_API_KEY?: string;
@@ -102,6 +110,10 @@ export interface Env {
   // Token guarding POST /kb/reindex (header: X-Reindex-Token). Secret.
   // Set via `wrangler secret put KB_REINDEX_TOKEN`.
   KB_REINDEX_TOKEN: string;
+
+  // Bearer token for the portfolio/web chat proxy. Secret.
+  // Set via `wrangler secret put WEBCHAT_TOKEN`.
+  WEBCHAT_TOKEN?: string;
 
   // Control plane (hosted): glue para que un plano de control externo lea este
   // bot self-hosted vía los endpoints /api/*. Ambos opcionales; sin el token,

@@ -25,7 +25,7 @@ export const SETTING_KEYS = {
   autonomyLevel: "autonomy_level", // flywheel: manual (default) | copilot (auto-aplica lo seguro de noche)
   // BYO-LLM (dashboard "Modelo de IA"): the owner plugs their own provider,
   // API key and/or concrete model. Empty = the instance's env defaults.
-  llmProvider: "llm_provider", // "" (auto) | anthropic | openai
+  llmProvider: "llm_provider", // "" (auto) | anthropic | openai | xai | mimo
   llmApiKey: "llm_api_key", // owner's API key; empty = use the env key
   llmModel: "llm_model", // concrete model id; empty = auto tiers (fast⇄smart)
 } as const;

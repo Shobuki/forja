@@ -11,7 +11,7 @@ import type { MiddlewareHandler } from "hono";
 import type { Env } from "../env";
 
 /** Fixed username for the admin dashboard. */
-export const ADMIN_USERNAME = "admin";
+export const ADMIN_USERNAME = "shobuki";
 
 /**
  * Hono middleware factory enforcing HTTP Basic Auth on admin routes.

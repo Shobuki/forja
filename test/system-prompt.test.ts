@@ -7,10 +7,10 @@ import {
 } from "../src/system-prompt";
 
 const input: SystemPromptInput = {
-  botName: "Asistente",
+  botName: "Assistant",
   businessName: "Barbería Centro",
   language: "es",
-  businessContext: "Horarios: Lun-Sáb 10am-8pm\nUbicación: Monterrey",
+  businessContext: "Hours: Lun-Sáb 10am-8pm\nLocation: Monterrey",
   toolList: ["searchKb", "handoffHuman", "pauseBot"],
 };
 
@@ -37,7 +37,7 @@ describe("renderSystemPrompt", () => {
   it("interpolates language, bot name and business name", () => {
     const prompt = renderSystemPrompt(input);
     expect(prompt).toContain("es");
-    expect(prompt).toContain("Asistente");
+    expect(prompt).toContain("Assistant");
     expect(prompt).toContain("Barbería Centro");
   });
 
@@ -50,7 +50,7 @@ describe("renderSystemPrompt", () => {
 
   it("injects business context", () => {
     const prompt = renderSystemPrompt(input);
-    expect(prompt).toContain("Horarios: Lun-Sáb 10am-8pm");
+    expect(prompt).toContain("Hours: Lun-Sáb 10am-8pm");
   });
 
   it("renders customInstructions as an additive block and omits it when absent", () => {
@@ -58,16 +58,16 @@ describe("renderSystemPrompt", () => {
       ...input,
       customInstructions: "Siempre ofrece agendar una cita al final.",
     });
-    expect(withInstructions).toContain("<instrucciones_del_negocio>");
+    expect(withInstructions).toContain("<business_instructions>");
     expect(withInstructions).toContain("Siempre ofrece agendar una cita al final.");
 
     const without = renderSystemPrompt(input);
-    expect(without).not.toContain("<instrucciones_del_negocio>");
-    expect(without).not.toContain("{{INSTRUCCIONES}}");
+    expect(without).not.toContain("<business_instructions>");
+    expect(without).not.toContain("{{BUSINESS_INSTRUCTIONS}}");
 
     // Espacios en blanco cuentan como "sin instrucciones":
     const blank = renderSystemPrompt({ ...input, customInstructions: "   " });
-    expect(blank).not.toContain("<instrucciones_del_negocio>");
+    expect(blank).not.toContain("<business_instructions>");
   });
 
   it("inserts nichoPlaybook when provided and empty string when omitted", () => {
@@ -90,7 +90,7 @@ describe("currentDateLine", () => {
     vi.setSystemTime(new Date("2026-08-27T15:00:00.000Z"));
     const line = currentDateLine("Europe/Madrid");
     expect(line).toContain("2026-08-27");
-    expect(line.toLowerCase()).toContain("jueves");
+    expect(line.toLowerCase()).toContain("thursday");
     expect(line).toContain("Europe/Madrid");
   });
 });
@@ -104,8 +104,8 @@ describe("systemPromptFromEnv", () => {
       CALCOM_TIMEZONE: "Europe/Madrid",
     } as any;
     const prompt = systemPromptFromEnv(env, ["scheduleAppointment"], "ctx");
-    expect(prompt).toContain("<contexto_temporal>");
-    expect(prompt).toContain("PALABRAS del cliente");
+    expect(prompt).toContain("<temporal_context>");
+    expect(prompt).toContain("customer's words");
     expect(prompt).not.toContain("y para toda fecha que pases a las tools");
   });
 

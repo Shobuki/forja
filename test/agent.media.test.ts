@@ -166,7 +166,7 @@ describe("SupportAgent.ingest — media (Task 6.3)", () => {
     });
 
     expect(agent.state.pendingMessages[0].text).toBe(
-      "(no pude entender el audio)",
+      "(I could not understand the audio)",
     );
   });
 
@@ -183,7 +183,7 @@ describe("SupportAgent.ingest — media (Task 6.3)", () => {
 
     const buffered = agent.state.pendingMessages[0].text;
     expect(buffered).toContain("mira esto");
-    expect(buffered).toContain("no soporta análisis de imágenes");
+    expect(buffered).toContain("does not support image analysis");
     expect(buffered).not.toContain("IMAGE_URL");
   });
 

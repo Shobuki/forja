@@ -1,38 +1,34 @@
 // member/config.local.ts
-// Business-specific configuration. Edited by the member (or by the skill
-// /configurar-mi-chatbot). NEVER overwritten on template update.
-//
-// This is a stub with example values. Replace with your real business info.
+// Business-specific configuration for Alfredo's portfolio.
 
 export const memberConfig = {
-  businessName: "Mi Negocio Ejemplo",
-  botName: "Asistente",
-  language: "es" as "es" | "en",
+  businessName: "Alfredo Da Gonza's Portfolio",
+  botName: "Alfredo AI",
+  language: "en" as "es" | "en",
   tier: "pro" as "free" | "pro",
-  timezone: "America/Mexico_City",
-  contactEmail: "contacto@minegocio.example",
+  timezone: "Asia/Jakarta",
+  contactEmail: "dagonzaalfredo@gmail.com",
 };
 
 export type MemberConfig = typeof memberConfig;
 
-// Business context consumed by src/businessContext.ts to render the
-// <business_context> section of the system prompt. Edit freely.
+// Business context consumed by src/businessContext.ts.
 export const businessConfig = {
-  hours: "Lun-Sáb 10am-8pm. Domingo cerrado.",
-  services: [
-    { name: "Corte", price: 250 },
-    { name: "Barba", price: 200 },
-    { name: "Corte + Barba", price: 400 },
-  ],
-  location: "Av. Constitución 145, Centro, Monterrey",
-  paymentMethods: ["efectivo", "transferencia", "tarjeta"],
-  contactPhone: "81 1234 5678",
+  hours: "Available for project inquiries and collaboration.",
+  services: [] as { name: string; price: number }[],
+  location: "Remote",
+  paymentMethods: [] as string[],
+  contactPhone: "",
   customFields: {
-    // member can add any string keys
+    focus: "Full-stack web development, backend systems, automation, and AI experiments.",
+    education: "Studied at Universitas Bunda Mulia and now works professionally as a Full-stack Developer.",
+    experience: "Alfredo currently works as a Full-stack Developer at Neural Technology. Previously, he worked as a Backend Developer at PT. Asianet Media Teknologi from September 2025 to December 2025.",
+    stack: "Node.js, TypeScript, Golang, React, Next.js, Angular, Express, PostgreSQL, MySQL, Prisma, Kotlin, Firebase, Python, Streamlit, Puppeteer, Docker, AWS, and Redis.",
+    projects: "Projects include Asianet Workforce Management System; Sunflex Store User Website; Sunflex Store Admin Dashboard; Travel Landing Page; Profile Landing Page; WhatsApp Bot Automation; Healthy Website Calculator; Instagram & Twitter Data Scraper; My Petz App; Canggihku App; and Meme Playground.",
+    contact: "For collaboration or project inquiries, use the Contact section or email dagonzaalfredo@gmail.com.",
   } as Record<string, string>,
 };
 
-// Product catalog consumed by src/tools/catalogQuery.ts (Pro tier).
-// Member fills via skill. Example:
-//   { name: "Pan dulce", price: 25, description: "Concha tradicional", sku: "PD-01" }
+export type BusinessConfig = typeof businessConfig;
+
 export const catalog: { name: string; price: number; description?: string; sku?: string }[] = [];

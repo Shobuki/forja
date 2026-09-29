@@ -27,7 +27,7 @@ export async function checkBotHealth(env: Env, now = Date.now()): Promise<Watchd
   const failures =
     (
       await db.first<{ n: number }>(
-        "SELECT COUNT(*) as n FROM messages WHERE role = 'assistant' AND content LIKE 'Algo falló%' AND created_at > ?",
+        "SELECT COUNT(*) as n FROM messages WHERE role = 'assistant' AND content LIKE 'Something went wrong on my side.%' AND created_at > ?",
         [now - WINDOW_MS],
       )
     )?.n ?? 0;
@@ -43,10 +43,10 @@ export async function checkBotHealth(env: Env, now = Date.now()): Promise<Watchd
 
   await settings.set(LAST_ALERT_KEY, String(now));
   await notifyOwner(env, {
-    reason: "salud del bot",
-    summary: `⚠ ${failures} respuestas fallidas en los últimos 30 min — revisa el proveedor de IA (rate limits/keys) o pausa el bot desde el panel.`,
+    reason: "bot health",
+    summary: `⚠ ${failures} failed replies in the last 30 min — check the AI provider (rate limits/keys) or pause the bot from the dashboard.`,
     ticketId: "watchdog",
   });
-  console.error(`[watchdog] ALERTA: ${failures} fallos en 30 min — dueño notificado`);
+  console.error(`[watchdog] ALERT: ${failures} failures in 30 min — owner notified`);
   return { failures, alerted: true };
 }

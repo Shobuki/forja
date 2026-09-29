@@ -20,15 +20,16 @@ function esc(s: string): string {
   );
 }
 
-/** Short relative time in Spanish (ej. "hace 5 min", "hace 2 h", "hace 3 d"). */
+/** Short relative time in English (for example, "5 min ago", "2 hr ago"). */
 function ago(ms: number | null | undefined): string {
   if (!ms) return "—";
   const min = Math.floor((Date.now() - ms) / 60_000);
-  if (min < 1) return "ahora";
-  if (min < 60) return `hace ${min} min`;
+  if (min < 1) return "now";
+  if (min < 60) return `${min} min ago`;
   const h = Math.floor(min / 60);
-  if (h < 24) return `hace ${h} h`;
-  return `hace ${Math.floor(h / 24)} d`;
+  if (h < 24) return `${h} hr ago`;
+  const days = Math.floor(h / 24);
+  return `${days} day${days === 1 ? "" : "s"} ago`;
 }
 
 /** Two-letter avatar initials from a display name (or channel-id fallback). */
@@ -46,7 +47,7 @@ function agentModelLabel(env: Env, cfg: AgentConfig): string {
 }
 
 // Single-letter Spanish day-of-week labels, indexed like Date#getUTCDay() (0 = Dom).
-const DOW_LETTER = ["D", "L", "M", "M", "J", "V", "S"];
+const DOW_LETTER = ["S", "M", "T", "W", "T", "F", "S"];
 
 export async function renderOverview(env: Env): Promise<string> {
   const db = new Db(env.DB);
@@ -136,9 +137,9 @@ export async function renderOverview(env: Env): Promise<string> {
     <div class="card bg-panel border border-line p-[18px]" style="animation-delay:.22s">
       <div class="font-display font-semibold text-[15px] text-cream flex items-center gap-2 mb-0.5">
         <i data-lucide="bar-chart-3" width="16" height="16" class="text-accent"></i>
-        Actividad — últimos 7 días
+        Activity — last 7 days
       </div>
-      <div class="text-[11px] text-dim mb-1">mensajes procesados por día</div>
+      <div class="text-[11px] text-dim mb-1">messages processed per day</div>
       <div class="flex items-end gap-3" style="height:150px;padding-top:16px">
         ${activityDays
           .map((d) => {
@@ -162,11 +163,11 @@ export async function renderOverview(env: Env): Promise<string> {
     <div class="card bg-panel border border-line p-[18px] flex flex-col" style="animation-delay:.26s">
       <div class="font-display font-semibold text-[15px] text-cream flex items-center gap-2 mb-3.5">
         <i data-lucide="activity" width="16" height="16" class="text-accent"></i>
-        Estado del agente
+        Agent status
       </div>
       <div class="flex flex-col gap-[11px] text-[12.5px]">
         <div class="flex items-center justify-between">
-          <span class="text-muted">Modelo activo</span>
+          <span class="text-muted">Active model</span>
           <span class="font-semibold font-mono text-[11.5px]">${esc(agentModelLabel(env, agentCfg))}</span>
         </div>
         <div style="height:1px;background:var(--line)"></div>
@@ -176,18 +177,18 @@ export async function renderOverview(env: Env): Promise<string> {
         </div>
         <div style="height:1px;background:var(--line)"></div>
         <div class="flex items-center justify-between">
-          <span class="text-muted">Docs de conocimiento</span>
+          <span class="text-muted">Knowledge docs</span>
           <span class="font-semibold">${totalKbDocs} <span class="text-dim font-normal">(${FIXTURE_CHUNKS.length} precargados)</span></span>
         </div>
         <div style="height:1px;background:var(--line)"></div>
         <div class="flex items-center justify-between">
-          <span class="text-muted">Resueltas sin humano</span>
+          <span class="text-muted">Resolved without a human</span>
           <span class="font-semibold ${resolvedPct7d === null ? "text-dim" : "text-ok"}">${resolvedPct7d === null ? "—" : `${resolvedPct7d}%`}</span>
         </div>
       </div>
       <a href="/admin/agente" class="bigbtn font-display font-bold text-[12.5px] cursor-pointer flex items-center justify-center gap-2"
          style="background:var(--accent);color:#1a1206;border:1px solid var(--accent);box-shadow:4px 4px 0 var(--linelit);padding:13px;margin-top:18px">
-        <i data-lucide="settings-2" width="16" height="16"></i> Ajustar mi agente
+        <i data-lucide="settings-2" width="16" height="16"></i> Configure my agent
       </a>
     </div>`;
 
@@ -214,14 +215,14 @@ export async function renderOverview(env: Env): Promise<string> {
           <i data-lucide="chevron-right" width="16" height="16" class="arr flex-none" style="color:var(--accent);opacity:0;transform:translateX(-4px);transition:all .15s ease"></i>
         </a>`;
       })
-      .join("") || `<div class="text-center text-[12.5px] text-dim" style="padding:32px 16px">Aún no hay conversaciones.</div>`;
+      .join("") || `<div class="text-center text-[12.5px] text-dim" style="padding:32px 16px">No conversations yet.</div>`;
 
   const recentConversations = `
     <div class="card bg-panel border border-line" style="animation-delay:.3s">
       <div class="flex items-center justify-between" style="padding:16px 18px 12px">
         <div class="font-display font-semibold text-[15px] text-cream flex items-center gap-2">
           <i data-lucide="messages-square" width="16" height="16" class="text-accent"></i>
-          Conversaciones recientes
+          Recent conversations
         </div>
         <a href="/admin/conversations" class="flex items-center gap-1 text-[11.5px]">ver todas <i data-lucide="arrow-right" width="13" height="13"></i></a>
       </div>
@@ -230,7 +231,7 @@ export async function renderOverview(env: Env): Promise<string> {
 
   const suggestionItems =
     proposedSuggestions.length === 0
-      ? `<p class="text-[12px] text-dim">Sin mejoras pendientes.</p>`
+      ? `<p class="text-[12px] text-dim">No pending improvements.</p>`
       : proposedSuggestions
           .slice(0, 2)
           .map(
@@ -243,10 +244,10 @@ export async function renderOverview(env: Env): Promise<string> {
     <div class="card bg-panel border border-line p-[18px] relative overflow-hidden" style="animation-delay:.34s;background:linear-gradient(160deg,var(--panel2),var(--panel));border-color:var(--linelit)">
       <div class="flex items-center gap-2 mb-1">
         <i data-lucide="sparkles" width="16" height="16" class="text-accent2"></i>
-        <span class="font-display font-semibold text-[15px] text-cream">Mejoras sugeridas</span>
+        <span class="font-display font-semibold text-[15px] text-cream">Suggested improvements</span>
       </div>
       <div class="text-[11px] text-dim mb-3.5">
-        ${proposedSuggestions.length} ${proposedSuggestions.length === 1 ? "sugerencia detectada" : "sugerencias detectadas"} por IA sobre tus conversaciones
+        ${proposedSuggestions.length} ${proposedSuggestions.length === 1 ? "suggestion detected" : "suggestions detected"} by AI about your conversations
       </div>
       ${suggestionItems}
       <a href="/admin/mejoras" class="flex items-center gap-1 text-[11.5px] mt-2.5">ver todas <i data-lucide="arrow-right" width="13" height="13"></i></a>
@@ -259,20 +260,20 @@ export async function renderOverview(env: Env): Promise<string> {
           <div class="absolute top-3 right-3 text-[9.5px] tracking-[.2em] text-dim uppercase">01</div>
           <div class="flex items-center gap-2 text-muted">
             <i data-lucide="message-circle" width="15" height="15"></i>
-            <span class="text-[11px] tracking-[.05em]">MENSAJES HOY</span>
+            <span class="text-[11px] tracking-[.05em]">MESSAGES TODAY</span>
           </div>
           <div class="glow font-display font-bold text-[38px] leading-none mt-3">${todayMsgs}</div>
-          <div class="text-[11px] text-dim mt-2">últimas 24 horas</div>
+          <div class="text-[11px] text-dim mt-2">last 24 hours</div>
         </div>
 
         <div class="card bg-panel border border-line p-4 relative overflow-hidden" style="animation-delay:.06s">
           <div class="absolute top-3 right-3 text-[9.5px] tracking-[.2em] text-dim uppercase">02</div>
           <div class="flex items-center gap-2 text-muted">
             <i data-lucide="users" width="15" height="15"></i>
-            <span class="text-[11px] tracking-[.05em]">CLIENTES ÚNICOS</span>
+            <span class="text-[11px] tracking-[.05em]">UNIQUE CUSTOMERS</span>
           </div>
           <div class="glow font-display font-bold text-[38px] leading-none mt-3">${todayConvs}</div>
-          <div class="text-[11px] text-dim mt-2">conversaciones distintas hoy</div>
+          <div class="text-[11px] text-dim mt-2">different conversations today</div>
         </div>
 
         <div class="card bg-panel border border-line p-4 relative overflow-hidden" style="animation-delay:.1s">
@@ -282,17 +283,17 @@ export async function renderOverview(env: Env): Promise<string> {
             <span class="text-[11px] tracking-[.05em]">${niche.kpiLabel.toUpperCase()}</span>
           </div>
           <div class="glow font-display font-bold text-[38px] leading-none mt-3 text-accent">${todayLeads}</div>
-          <div class="text-[11px] text-dim mt-2">nuevos hoy</div>
+          <div class="text-[11px] text-dim mt-2">new today</div>
         </div>
 
         <div class="card bg-panel border border-line p-4 relative overflow-hidden" style="animation-delay:.14s">
           <div class="absolute top-3 right-3 text-[9.5px] tracking-[.2em] text-dim uppercase">04</div>
           <div class="flex items-center gap-2 text-muted">
             <i data-lucide="coins" width="15" height="15"></i>
-            <span class="text-[11px] tracking-[.05em]">COSTO DEL MES</span>
+            <span class="text-[11px] tracking-[.05em]">MONTHLY COST</span>
           </div>
           <div class="glow font-display font-bold text-[38px] leading-none mt-3">$${totalCost.toFixed(2)}</div>
-          <div class="text-[11px] text-dim mt-2">${monthMsgs} mensajes · Claude · 30 días</div>
+          <div class="text-[11px] text-dim mt-2">${monthMsgs} messages · Claude · 30 days</div>
         </div>
       </section>
 
@@ -300,30 +301,30 @@ export async function renderOverview(env: Env): Promise<string> {
         <div class="flex items-center justify-between">
           <div class="font-display font-semibold text-[15px] text-cream flex items-center gap-2">
             <i data-lucide="activity" width="16" height="16" class="text-accent"></i>
-            Salud del bot
+            Bot health
           </div>
           <a href="/admin/tickets" class="flex items-center gap-1 text-[11.5px]">
-            ver tickets <i data-lucide="arrow-right" width="13" height="13"></i>
+            view tickets <i data-lucide="arrow-right" width="13" height="13"></i>
           </a>
         </div>
         <div class="mt-3" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
           ${
             openTickets > 0
-              ? `<span style="font-size:9px;color:var(--bad);border:1px solid var(--bad);padding:1px 6px">⚠ ${openTickets} tickets abiertos</span>`
-              : `<span style="font-size:9px;color:var(--ok);border:1px solid var(--ok);padding:1px 6px">✓ 0 tickets abiertos</span>`
+              ? `<span style="font-size:9px;color:var(--bad);border:1px solid var(--bad);padding:1px 6px">⚠ ${openTickets} open tickets</span>`
+              : `<span style="font-size:9px;color:var(--ok);border:1px solid var(--ok);padding:1px 6px">✓ 0 open tickets</span>`
           }
           ${(() => {
             // Cuando el bot escala a humano, ¿alguien se entera? Antes esto
             // fallaba en silencio; ahora se ve aquí en rojo si falta configurar.
             const notify = handoffNotifyStatus(env);
             return notify.ok
-              ? `<span style="font-size:9px;color:var(--ok);border:1px solid var(--ok);padding:1px 6px">✓ handoff avisa por ${notify.channels.join(" + ")}</span>`
-              : `<span style="font-size:9px;color:var(--bad);border:1px solid var(--bad);padding:1px 6px">⚠ HANDOFF SIN AVISO — el bot crea tickets pero NADIE recibe notificación (configura Telegram, WhatsApp o email del dueño)</span>`;
+              ? `<span style="font-size:9px;color:var(--ok);border:1px solid var(--ok);padding:1px 6px">✓ handoff notifies via ${notify.channels.join(" + ")}</span>`
+              : `<span style="font-size:9px;color:var(--bad);border:1px solid var(--bad);padding:1px 6px">⚠ HANDOFF WITHOUT NOTIFICATION — the bot creates tickets but NOBODY is notified (configure Telegram, WhatsApp, or the owner's email)</span>`;
           })()}
           ${(() => {
             const conn = connectionsSummary(env);
             const ok = conn.connected > 0;
-            return `<a href="/admin/conexiones" style="font-size:9px;color:${ok ? "var(--ok)" : "var(--bad)"};border:1px solid ${ok ? "var(--ok)" : "var(--bad)"};padding:1px 6px;text-decoration:none">${ok ? "✓" : "⚠"} ${conn.connected}/${conn.total} canales conectados</a>`;
+            return `<a href="/admin/conexiones" style="font-size:9px;color:${ok ? "var(--ok)" : "var(--bad)"};border:1px solid ${ok ? "var(--ok)" : "var(--bad)"};padding:1px 6px;text-decoration:none">${ok ? "✓" : "⚠"} ${conn.connected}/${conn.total} connected channels</a>`;
           })()}
         </div>
       </section>

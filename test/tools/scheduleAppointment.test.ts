@@ -102,7 +102,7 @@ describe("scheduleAppointmentTool", () => {
         ),
     );
     global.fetch = fetchMock as any;
-    const env = { ...baseEnv, CALCOM_TIMEZONE: "Europe/Madrid", BOT_LANGUAGE: "es" };
+    const env = { ...baseEnv, CALCOM_TIMEZONE: "Europe/Madrid", BOT_LANGUAGE: "en" };
     const tool = scheduleAppointmentTool(env, () => "conv_x");
     const result = (await tool.execute!({ date: "el próximo martes a las 10" }, {} as any)) as {
       date: string;
@@ -110,7 +110,7 @@ describe("scheduleAppointmentTool", () => {
       slots: string[];
     };
     expect(result.date).toBe("2026-09-01");
-    expect(result.weekday).toBe("martes");
+    expect(result.weekday).toBe("tuesday");
     expect(result.slots[0]).toContain("2026-09-01");
     const [url] = fetchMock.mock.calls[0] as unknown as [string];
     expect(url).toContain("start=2026-09-01");
@@ -137,7 +137,7 @@ describe("scheduleAppointmentTool", () => {
     )) as { booked: boolean; start: string; weekday: string; date: string };
     expect(result.booked).toBe(true);
     expect(result.date).toBe("2026-09-01");
-    expect(result.weekday).toBe("martes");
+    expect(result.weekday).toBe("tuesday");
     expect(result.start).toBe("2026-09-01T10:00:00+02:00");
     const body = JSON.parse(String((fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].body));
     expect(body.start).toBe("2026-09-01T10:00:00+02:00");

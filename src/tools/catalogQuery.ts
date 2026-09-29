@@ -6,7 +6,7 @@ import { catalog } from "../../member/config.local";
 export function catalogQueryTool(_env: Env) {
   return tool({
     description:
-      "Busca productos en el catálogo del negocio por nombre o keyword. Devuelve hasta 5 matches con precio.",
+      "Search products in the business catalog by name or keyword. Return up to five matches with prices.",
     inputSchema: z.object({
       query: z.string().min(1),
     }),

@@ -75,29 +75,29 @@ export async function renderCosts(env: Env, saved = false): Promise<string> {
 
   const budgetCard = `
     <div class="card bg-panel border border-line p-[18px]">
-      ${saved ? `<div class="border border-ok text-ok px-3 py-2 text-[12.5px] mb-3" style="background:var(--panel2)">✓ Presupuesto guardado.</div>` : ""}
+      ${saved ? `<div class="border border-ok text-ok px-3 py-2 text-[12.5px] mb-3" style="background:var(--panel2)">✓ Budget saved.</div>` : ""}
       <div class="flex flex-wrap items-center gap-2 mb-2">
-        <span class="font-display font-semibold text-[14px]">🎯 Presupuesto mensual de IA</span>
-        ${hasBudget && pct >= 100 ? `<span class="text-[9px] px-1.5 py-0.5 border border-bad text-bad">límite alcanzado — el bot bajó al modelo económico</span>` : ""}
+        <span class="font-display font-semibold text-[14px]">🎯 Monthly AI budget</span>
+        ${hasBudget && pct >= 100 ? `<span class="text-[9px] px-1.5 py-0.5 border border-bad text-bad">limit reached — bot downgraded to the economical model</span>` : ""}
       </div>
       ${hasBudget
         ? `
       <div class="flex items-baseline justify-between text-[12.5px] mb-2">
-        <span class="text-muted">Gastado este mes: <b class="text-cream">${money(monthToDate)}</b> de ${money(budget)}</span>
+        <span class="text-muted">Spent this month: <b class="text-cream">${money(monthToDate)}</b> of ${money(budget)}</span>
         <span class="text-[11px] font-semibold" style="color:${barColor}">${pct}%</span>
       </div>
       <div style="height:12px;background:var(--panel2);border:1px solid var(--line);overflow:hidden">
         <div style="width:${pct}%;height:100%;background:${barColor}"></div>
       </div>`
-        : `<p class="text-[12.5px] text-muted mb-2 leading-relaxed">Sin límite configurado. Ponle un tope: al alcanzarlo, el bot sigue contestando pero solo con el modelo económico — nunca se queda callado ni te lleva sorpresas.</p>`}
-      <p class="text-[11px] text-dim mt-2.5 mb-[14px]">Al ritmo actual, terminarás el mes en <b class="text-muted">${money(projected)}</b> de IA.</p>
+        : `<p class="text-[12.5px] text-muted mb-2 leading-relaxed">No limit configured. Set a cap: when reached, the bot keeps replying with the economical model — it never goes silent or surprises you.</p>`}
+      <p class="text-[11px] text-dim mt-2.5 mb-[14px]">At the current rate, you will end the month at <b class="text-muted">${money(projected)}</b> in AI costs.</p>
       <form method="POST" action="/admin/costs/budget" class="flex items-center gap-2 flex-wrap">
-        <span class="text-[12px] text-muted">Límite mensual: $</span>
+        <span class="text-[12px] text-muted">Monthly limit: $</span>
         <input type="number" name="monthly_budget" min="0" step="0.5" value="${hasBudget ? budget : ""}" placeholder="25"
                style="width:90px;background:var(--bg);border:1px solid var(--line);color:var(--cream);padding:8px 10px;font-size:12.5px;outline:none">
-        <span class="text-[10.5px] text-dim">USD · deja vacío para quitar el límite</span>
+        <span class="text-[10.5px] text-dim">USD · leave empty to remove the limit</span>
         <button class="bigbtn font-display font-bold text-[12px] cursor-pointer"
-          style="background:var(--accent);border:1px solid var(--accent);color:#1a1206;box-shadow:3px 3px 0 var(--linelit);padding:8px 16px">Guardar</button>
+          style="background:var(--accent);border:1px solid var(--accent);color:#1a1206;box-shadow:3px 3px 0 var(--linelit);padding:8px 16px">Save</button>
       </form>
     </div>`;
 
@@ -110,19 +110,19 @@ export async function renderCosts(env: Env, saved = false): Promise<string> {
   const cards = `
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
       <div class="card bg-panel border border-line border-l-[3px] border-l-accent p-5">
-        <div class="text-muted text-[11px]">Total este mes</div>
+        <div class="text-muted text-[11px]">Total this month</div>
         <div class="font-display font-bold text-[30px] mt-1 leading-none">${money(totalMonth)}</div>
         <div class="text-[10px] text-dim mt-1">IA + Twilio</div>
       </div>
       <div class="card bg-panel border border-line p-5">
         <div class="text-muted text-[11px]">🧠 IA (Claude)</div>
         <div class="font-display font-bold text-[24px] mt-1.5 leading-none">${money(iaMonth)}</div>
-        <div class="text-[10px] text-dim mt-1">hoy ${money4(iaToday)}</div>
+        <div class="text-[10px] text-dim mt-1">today ${money4(iaToday)}</div>
       </div>
       <div class="card bg-panel border border-line p-5">
         <div class="text-muted text-[11px]">💬 WhatsApp / Twilio</div>
         <div class="font-display font-bold text-[24px] mt-1.5 leading-none">${tw.available ? money(twMonth) : "—"}</div>
-        <div class="text-[10px] text-dim mt-1">${tw.available ? `${tw.waConversations} conversaciones` : (tw.error ?? "no disponible")}</div>
+        <div class="text-[10px] text-dim mt-1">${tw.available ? `${tw.waConversations} conversations` : (tw.error ?? "unavailable")}</div>
       </div>
     </div>`;
 
@@ -136,13 +136,13 @@ export async function renderCosts(env: Env, saved = false): Promise<string> {
         <td class="text-right text-dim text-[11px]">${(m.input / 1000).toFixed(0)}k / ${(m.output / 1000).toFixed(0)}k</td>
         <td class="text-right font-semibold text-cream">${money4(m.cost)}</td>
       </tr>`).join("") ||
-    `<tr><td colspan="4" class="py-3 text-dim text-center text-[12.5px]">Aún no hay uso de IA.</td></tr>`;
+    `<tr><td colspan="4" class="py-3 text-dim text-center text-[12.5px]">No AI usage yet.</td></tr>`;
 
   const iaCard = `
     <div class="card bg-panel border border-line p-[18px]">
-      <div class="font-display font-semibold text-[14px] mb-1">🧠 IA por modelo <span class="text-[10px] text-dim font-normal">(30 días · exacto)</span></div>
+      <div class="font-display font-semibold text-[14px] mb-1">🧠 AI by model <span class="text-[10px] text-dim font-normal">(30 days · exact)</span></div>
       <table class="w-full text-[12px] mt-2">
-        <thead><tr class="text-[9.5px] tracking-[.1em] uppercase text-dim text-left"><th class="font-normal pb-2">Modelo</th><th class="font-normal text-right pb-2">Msgs</th><th class="font-normal text-right pb-2">Tokens in/out</th><th class="font-normal text-right pb-2">Costo</th></tr></thead>
+        <thead><tr class="text-[9.5px] tracking-[.1em] uppercase text-dim text-left"><th class="font-normal pb-2">Model</th><th class="font-normal text-right pb-2">Msgs</th><th class="font-normal text-right pb-2">Tokens in/out</th><th class="font-normal text-right pb-2">Cost</th></tr></thead>
         <tbody>${modelRows}</tbody>
       </table>
     </div>`;
@@ -156,21 +156,21 @@ export async function renderCosts(env: Env, saved = false): Promise<string> {
             <td class="text-right text-dim text-[11px]">${esc(String(c.usage))} ${esc(c.unit)}</td>
             <td class="text-right font-semibold text-cream">${money4(c.price)}</td>
           </tr>`).join("")
-        : `<tr><td colspan="3" class="py-3 text-dim text-center text-[12.5px]">Sin cargos este mes.</td></tr>`)
-    : `<tr><td colspan="3" class="py-3 text-dim text-center text-[12.5px]">${esc(tw.error ?? "Twilio no disponible")}</td></tr>`;
+        : `<tr><td colspan="3" class="py-3 text-dim text-center text-[12.5px]">No charges this month.</td></tr>`)
+    : `<tr><td colspan="3" class="py-3 text-dim text-center text-[12.5px]">${esc(tw.error ?? "Twilio unavailable")}</td></tr>`;
 
   const twSubtotal = tw.available
     ? `<div class="mt-3 text-[12px] text-muted flex justify-between" style="border-top:1px solid var(--linelit);padding-top:10px">
-         <span>Mensajería ${money4(tw.messagingTotal)} · Números ${money4(tw.numbersTotal)}</span>
+         <span>Messaging ${money4(tw.messagingTotal)} · Numbers ${money4(tw.numbersTotal)}</span>
          <span class="font-bold text-cream">${money(twMonth)}</span>
        </div>`
     : "";
 
   const twCard = `
     <div class="card bg-panel border border-line p-[18px]">
-      <div class="font-display font-semibold text-[14px] mb-1">💬 Twilio este mes <span class="text-[10px] text-dim font-normal">— real, de tu factura de Twilio</span></div>
+      <div class="font-display font-semibold text-[14px] mb-1">💬 Twilio this month <span class="text-[10px] text-dim font-normal">— real, from your Twilio bill</span></div>
       <table class="w-full text-[12px] mt-2">
-        <thead><tr class="text-[9.5px] tracking-[.1em] uppercase text-dim text-left"><th class="font-normal pb-2">Concepto</th><th class="font-normal text-right pb-2">Uso</th><th class="font-normal text-right pb-2">Costo</th></tr></thead>
+        <thead><tr class="text-[9.5px] tracking-[.1em] uppercase text-dim text-left"><th class="font-normal pb-2">Item</th><th class="font-normal text-right pb-2">Usage</th><th class="font-normal text-right pb-2">Cost</th></tr></thead>
         <tbody>${twRows}</tbody>
       </table>
       ${twSubtotal}
@@ -181,23 +181,23 @@ export async function renderCosts(env: Env, saved = false): Promise<string> {
     .sort((a, b) => (a[0] < b[0] ? 1 : -1))
     .slice(0, 30)
     .map(([day, cost]) => `<tr style="border-top:1px solid var(--line)"><td class="py-1.5 text-muted">${esc(day)}</td><td class="text-right text-cream">${money4(cost)}</td></tr>`)
-    .join("") || `<tr><td colspan="2" class="py-3 text-dim text-center text-[12.5px]">Sin datos.</td></tr>`;
+    .join("") || `<tr><td colspan="2" class="py-3 text-dim text-center text-[12.5px]">No data.</td></tr>`;
 
   const dayCard = `
     <div class="card bg-panel border border-line p-[18px]">
-      <div class="font-display font-semibold text-[14px] mb-1">📅 Costo de IA por día</div>
+      <div class="font-display font-semibold text-[14px] mb-1">📅 AI cost per day</div>
       <table class="w-full text-[12px] mt-2">
-        <thead><tr class="text-[9.5px] tracking-[.1em] uppercase text-dim text-left"><th class="font-normal pb-2">Día</th><th class="font-normal text-right pb-2">Costo IA</th></tr></thead>
+        <thead><tr class="text-[9.5px] tracking-[.1em] uppercase text-dim text-left"><th class="font-normal pb-2">Day</th><th class="font-normal text-right pb-2">AI cost</th></tr></thead>
         <tbody>${dayRows}</tbody>
       </table>
     </div>`;
 
   const note = `
     <p class="text-[10.5px] text-dim leading-relaxed">
-      El costo de <b class="text-muted">IA</b> es exacto (calculado desde los tokens de cada mensaje).
-      El de <b class="text-muted">Twilio</b> viene de la Usage Records API de Twilio: es lo que tu cuenta
-      realmente gastó (incluye renta de números). Los precios de Meta por conversación de
-      WhatsApp aparecen dentro de las categorías de Twilio.
+      <b class="text-muted">AI</b> cost is exact, calculated from the tokens stored for each message.
+      <b class="text-muted">Twilio</b> cost comes from Twilio's Usage Records API: it is what your account
+      actually spent, including phone-number rental. Meta WhatsApp conversation prices appear inside
+      Twilio's categories.
     </p>`;
 
   const body = `
@@ -212,5 +212,5 @@ export async function renderCosts(env: Env, saved = false): Promise<string> {
       ${note}
     </div>`;
 
-  return layout({ title: "Costos", activeTab: "costs", body, env });
+  return layout({ title: "Costs", activeTab: "costs", body, env });
 }

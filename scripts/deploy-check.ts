@@ -9,6 +9,9 @@
 
 export interface DeployConfig {
   ANTHROPIC_API_KEY?: string;
+  OPENAI_API_KEY?: string;
+  XAI_API_KEY?: string;
+  MIMO_API_KEY?: string;
   BOT_NAME?: string;
   BOT_TIER?: string;
   DASHBOARD_PASSWORD?: string;
@@ -28,7 +31,9 @@ export interface DeployCheckResult {
 export function validateDeployConfig(cfg: DeployConfig): DeployCheckResult {
   const errors: string[] = [];
 
-  if (!cfg.ANTHROPIC_API_KEY) errors.push("Falta ANTHROPIC_API_KEY (Claude API).");
+  if (!cfg.ANTHROPIC_API_KEY && !cfg.OPENAI_API_KEY && !cfg.XAI_API_KEY && !cfg.MIMO_API_KEY) {
+    errors.push("Falta una API key de IA (ANTHROPIC_API_KEY, OPENAI_API_KEY, XAI_API_KEY o MIMO_API_KEY).");
+  }
   if (!cfg.BOT_NAME) errors.push("Falta BOT_NAME.");
   if (!cfg.BOT_TIER) errors.push("Falta BOT_TIER ('free' | 'pro').");
 
@@ -85,7 +90,7 @@ if (isMain) {
   if (!cfg.BOT_NAME) errors.push("Falta BOT_NAME en wrangler.toml.");
   if (!cfg.BOT_TIER) errors.push("Falta BOT_TIER ('free' | 'pro') en wrangler.toml.");
   if (!cfg.DASHBOARD_PASSWORD) errors.push("Falta el secret DASHBOARD_PASSWORD (créalo: pnpm exec wrangler secret put DASHBOARD_PASSWORD).");
-  if (!cfg.ANTHROPIC_API_KEY && !cfg.OPENAI_API_KEY && !cfg.XAI_API_KEY) {
+  if (!cfg.ANTHROPIC_API_KEY && !cfg.OPENAI_API_KEY && !cfg.XAI_API_KEY && !cfg.MIMO_API_KEY) {
     warnings.push("Aún no hay llave de IA como secret — el bot desplegará pero no contestará. Ponla con `wrangler secret put ANTHROPIC_API_KEY` (o desde el panel: Configuración → Modelo de IA).");
   }
   if (!cfg.TELEGRAM_BOT_TOKEN && !cfg.MANYCHAT_API_KEY && !cfg.TWILIO_ACCOUNT_SID && !cfg.META_PAGE_ACCESS_TOKEN) {

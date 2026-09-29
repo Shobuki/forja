@@ -108,10 +108,11 @@ function renderLlmSection(settings: Record<string, string>, llmTest?: string): s
   const keyTail = hasKey ? (settings[SETTING_KEYS.llmApiKey] ?? "").trim().slice(-4) : "";
 
   const providerOpts = [
-    { v: "", l: "Automático (recomendado)" },
+    { v: "", l: "Automatic (recommended)" },
     { v: "anthropic", l: "Claude (Anthropic)" },
     { v: "openai", l: "ChatGPT (OpenAI)" },
     { v: "xai", l: "Grok (xAI)" },
+    { v: "mimo", l: "MiMo (Xiaomi)" },
   ]
     .map((o) => `<option value="${o.v}" ${provider === o.v ? "selected" : ""}>${o.l}</option>`)
     .join("");
@@ -125,19 +126,22 @@ function renderLlmSection(settings: Record<string, string>, llmTest?: string): s
   const xaiOpts = CURATED_MODELS.filter((m) => m.provider === "xai")
     .map((m) => `<option value="${esc(m.id)}" ${model === m.id ? "selected" : ""}>${esc(m.label)}</option>`)
     .join("");
+  const mimoOpts = CURATED_MODELS.filter((m) => m.provider === "mimo")
+    .map((m) => `<option value="${esc(m.id)}" ${model === m.id ? "selected" : ""}>${esc(m.label)}</option>`)
+    .join("");
 
   let testBanner = "";
   if (llmTest?.startsWith("ok:")) {
-    testBanner = `<div style="border:1px solid var(--ok);background:rgba(127,183,126,.1);color:var(--ok);padding:9px 12px;font-size:12px;font-weight:600">✓ Conexión exitosa — respondió ${esc(llmTest.slice(3))}</div>`;
+    testBanner = `<div style="border:1px solid var(--ok);background:rgba(127,183,126,.1);color:var(--ok);padding:9px 12px;font-size:12px;font-weight:600">✓ Connection successful — replied ${esc(llmTest.slice(3))}</div>`;
   } else if (llmTest?.startsWith("err:")) {
-    testBanner = `<div style="border:1px solid var(--danger,#e0654d);background:rgba(224,101,77,.1);color:var(--danger,#e0654d);padding:9px 12px;font-size:12px;font-weight:600">✕ Falló la prueba: ${esc(llmTest.slice(4, 400))}</div>`;
+    testBanner = `<div style="border:1px solid var(--danger,#e0654d);background:rgba(224,101,77,.1);color:var(--danger,#e0654d);padding:9px 12px;font-size:12px;font-weight:600">✕ Test failed: ${esc(llmTest.slice(4, 400))}</div>`;
   }
 
   return `
     <div class="bg-panel border border-line" style="padding:20px;display:flex;flex-direction:column;gap:18px">
       <div style="display:flex;flex-direction:column;gap:2px">
-        <h3 class="font-display font-semibold text-[13.5px] text-cream">🧠 Modelo de IA</h3>
-        <p class="text-dim text-[12px]">Elige qué inteligencia artificial usa tu bot. Puedes usar tu propia API key para pagar tú el consumo directamente. Si lo dejas en automático, el bot usa la configuración incluida (rápido para lo simple, inteligente para lo difícil).</p>
+        <h3 class="font-display font-semibold text-[13.5px] text-cream">🧠 AI model</h3>
+        <p class="text-dim text-[12px]">Choose the AI provider your bot uses. You can use your own API key and pay the provider directly. With automatic mode, the bot uses the included configuration (fast for simple tasks, smart for difficult ones).</p>
       </div>
       ${testBanner}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
@@ -146,24 +150,25 @@ function renderLlmSection(settings: Record<string, string>, llmTest?: string): s
           <select name="${SETTING_KEYS.llmProvider}" style="${SELECT_STYLE}">${providerOpts}</select>
         </div>
         <div style="display:flex;flex-direction:column;gap:6px">
-          <label class="font-display font-semibold text-[12.5px] text-cream">Modelo</label>
+          <label class="font-display font-semibold text-[12.5px] text-cream">Model</label>
           <select name="${SETTING_KEYS.llmModel}" style="${SELECT_STYLE}">
-            <option value="" ${model === "" ? "selected" : ""}>Automático (rápido ⇄ inteligente)</option>
+            <option value="" ${model === "" ? "selected" : ""}>Automatic (fast ⇄ smart)</option>
             <optgroup label="Claude (Anthropic)">${anthropicOpts}</optgroup>
             <optgroup label="ChatGPT (OpenAI)">${openaiOpts}</optgroup>
             <optgroup label="Grok (xAI)">${xaiOpts}</optgroup>
+            <optgroup label="MiMo (Xiaomi)">${mimoOpts}</optgroup>
           </select>
         </div>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px">
         <label class="font-display font-semibold text-[12.5px] text-cream">Tu API key (opcional)</label>
-        <p class="text-dim text-[11px]">${hasKey ? `Hay una key guardada (termina en …${esc(keyTail)}). Escribe una nueva para reemplazarla, o marca la casilla para quitarla.` : "Pégala aquí para que el consumo se cobre a tu cuenta. Vacío = usar la key incluida del sistema."}</p>
+        <p class="text-dim text-[11px]">${hasKey ? `A key is saved (ending in …${esc(keyTail)}). Enter a new one to replace it, or check the box to remove it.` : "Paste it here to bill usage to your account. Empty = use the system key."}</p>
         <input type="password" name="${SETTING_KEYS.llmApiKey}" value="" autocomplete="off"
                placeholder="${hasKey ? "••••••••••••" : "sk-ant-… o sk-…"}" style="${INPUT_STYLE}">
-        ${hasKey ? `<label class="text-dim text-[11.5px]" style="display:flex;align-items:center;gap:7px;cursor:pointer"><input type="checkbox" name="llm_api_key_clear" value="1"> Quitar mi API key y volver a la del sistema</label>` : ""}
+        ${hasKey ? `<label class="text-dim text-[11.5px]" style="display:flex;align-items:center;gap:7px;cursor:pointer"><input type="checkbox" name="llm_api_key_clear" value="1"> Remove my API key and use the system key again</label>` : ""}
       </div>
       <a href="/admin/config/llm-test" class="text-[12px] font-display font-semibold"
-         style="width:fit-content;border:1px solid var(--line);color:var(--cream);padding:9px 14px;text-decoration:none">⚡ Probar mi configuración (guarda primero)</a>
+         style="width:fit-content;border:1px solid var(--line);color:var(--cream);padding:9px 14px;text-decoration:none">⚡ Test my configuration (save first)</a>
     </div>`;
 }
 
@@ -187,7 +192,7 @@ export function renderConfig(
   const hasPromptOverride = (settings[SETTING_KEYS.systemPromptOverride] ?? "").trim() !== "";
 
   const savedBanner = saved
-    ? `<div style="border:1px solid var(--ok);background:rgba(127,183,126,.1);color:var(--ok);padding:10px 14px;font-size:12.5px;font-weight:600">Guardado ✓</div>`
+    ? `<div style="border:1px solid var(--ok);background:rgba(127,183,126,.1);color:var(--ok);padding:10px 14px;font-size:12.5px;font-weight:600">Saved ✓</div>`
     : "";
 
   const body = `
@@ -196,7 +201,7 @@ export function renderConfig(
 
       <div style="display:flex;flex-direction:column;gap:2px">
         <h2 class="font-display font-semibold text-[15px] text-cream">Panel de control de ${esc(env.BUSINESS_NAME)}</h2>
-        <p class="text-muted text-[12.5px]">Ajuste cómo se comporta su bot. Los cambios se guardan al presionar el botón de abajo.</p>
+        <p class="text-muted text-[12.5px]">Adjust how your bot behaves. Changes are saved when you press the button below.</p>
       </div>
 
       <!-- Card-based controls (tono, velocidad, estilo, cerebro, estado) -->
@@ -211,40 +216,40 @@ export function renderConfig(
       <div class="bg-panel border border-line" style="padding:20px;display:flex;flex-direction:column;gap:18px">
         ${renderTextField({
           name: SETTING_KEYS.botName,
-          label: "Nombre del bot",
-          help: "Cómo se presenta su asistente con los clientes.",
+          label: "Bot name",
+          help: "How your assistant presents itself to customers.",
           value: settings[SETTING_KEYS.botName] ?? "",
           placeholder: env.BOT_NAME ?? "Mi asistente",
         })}
 
         ${renderTextArea({
           name: SETTING_KEYS.businessContext,
-          label: "Información del negocio",
-          help: "Horarios, servicios, precios, ubicación. El bot responde con esto. Editable en vivo — se aplica al guardar, sin re-desplegar.",
+          label: "Business information",
+          help: "Hours, services, prices, and location. The bot answers with this. Editable live — applies on save without redeploying.",
           // Pre-llenado: si el panel aún no tiene override, muestra lo que el
           // onboarding cargó en member/config.local (renderBusinessContext) para
           // que el miembro VEA y edite sus horarios aquí desde el día 1.
           value: settings[SETTING_KEYS.businessContext] || renderBusinessContext(),
-          placeholder: "Ej. Abrimos lunes a sábado de 9 a 7. Corte $150, barba $100. Estamos en Av. Reforma 123.",
+          placeholder: "Example: We are open Monday to Saturday from 9 to 7. Haircut $150, beard $100. We are at 123 Reforma Ave.",
           rows: 6,
         })}
 
         ${renderTextArea({
           name: SETTING_KEYS.systemPromptOverride,
-          label: "Prompt del agente (avanzado)",
+          label: "Agent prompt (advanced)",
           help: hasPromptOverride
-            ? "✍ Modo manual: su bot está usando este texto como prompt completo, en lugar del automático. Para verlo entero o volver al automático: Mi Agente → Flujo → Agente."
-            : "⚠️ Lo que escriba aquí REEMPLAZA el prompt completo del bot — incluida la información del negocio de arriba, su base de conocimiento y sus reglas de seguridad. No agrega instrucciones: las sustituye. Déjelo vacío para usar el prompt automático. Para editar sobre el prompt real, vaya a Mi Agente → Flujo → Agente.",
+            ? "✍ Manual mode: your bot uses this text as the complete prompt instead of the automatic one. To view it or return to automatic mode: My Agent → Flow → Agent."
+            : "⚠️ What you write here REPLACES the bot's complete prompt — including the business information above, its knowledge base, and safety rules. It does not add instructions; it replaces them. Leave it empty to use the automatic prompt. To edit the real prompt, go to My Agent → Flow → Agent.",
           value: settings[SETTING_KEYS.systemPromptOverride] ?? "",
           placeholder:
-            "Vacío = el bot usa su prompt automático completo: la información del negocio, su base de conocimiento y sus reglas de seguridad.",
+            "Empty = the bot uses its complete automatic prompt: business information, knowledge base, and safety rules.",
           rows: 4,
         })}
 
         ${renderTextField({
           name: SETTING_KEYS.escalationKeywords,
-          label: "Palabras que piden un humano",
-          help: "Si el cliente escribe alguna, el bot avisa a una persona. Sepárelas con comas.",
+          label: "Words that request a human",
+          help: "If the customer writes any of these, the bot alerts a human. Separate them with commas.",
           value: settings[SETTING_KEYS.escalationKeywords] ?? "",
           placeholder: "queja, reembolso, hablar con alguien",
         })}
@@ -252,7 +257,7 @@ export function renderConfig(
 
       <button type="submit" class="bigbtn font-display font-bold text-[13px] cursor-pointer"
               style="width:fit-content;background:var(--accent);border:1px solid var(--accent);color:#1a1206;box-shadow:4px 4px 0 var(--linelit);padding:13px 24px;display:flex;align-items:center;gap:9px">
-        <i data-lucide="check" width="16" height="16"></i> Guardar cambios
+        <i data-lucide="check" width="16" height="16"></i> Save changes
       </button>
     </form>`;
 

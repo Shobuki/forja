@@ -131,7 +131,7 @@ describe("admin routes — navigation", () => {
   it("warns that the prompt field replaces the whole prompt when it is empty", async () => {
     const res = await adminApp.fetch(req("/config", { headers: authHeaders }), makeEnv());
     const html = await res.text();
-    expect(html).toContain("REEMPLAZA el prompt completo");
+    expect(html).toContain("REPLACES the bot's complete prompt");
     expect(html).toContain("Mi Agente → Flujo");
     // El ejemplo viejo invitaba justo al error que este aviso evita.
     expect(html).not.toContain("Ej. Siempre ofrece agendar una cita al final.");
@@ -148,7 +148,7 @@ describe("admin routes — navigation", () => {
     );
     const res = await adminApp.fetch(req("/config", { headers: authHeaders }), env);
     const html = await res.text();
-    expect(html).toContain("Modo manual");
+    expect(html).toContain("Manual mode");
     expect(html).toContain("Responde siempre en verso.");
   });
 
@@ -267,7 +267,7 @@ describe("admin routes — config save (POST /config)", () => {
     const env = makeEnv(makeStubDb([], runLog));
     const body = new URLSearchParams({
       [SETTING_KEYS.tone]: "Formal", // label -> "formal y profesional"
-      [SETTING_KEYS.bufferSeconds]: "Rápido", // label -> "5"
+      [SETTING_KEYS.bufferSeconds]: "Fast", // label -> "5"
       [SETTING_KEYS.maxChunks]: "3", // raw value -> "3"
       [SETTING_KEYS.modelOverride]: "sonnet", // raw value -> "sonnet"
       [SETTING_KEYS.botPaused]: "1", // raw value -> "1"

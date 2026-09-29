@@ -14,7 +14,7 @@ beforeEach(async () => {
   const d1 = await mf.getD1Database("DB");
   env = {
     DB: d1,
-    BOT_NAME: "Asistente",
+    BOT_NAME: "Assistant",
     BUSINESS_NAME: "Test Business",
     BOT_LANGUAGE: "es",
     BOT_TIER: "pro",
@@ -31,7 +31,7 @@ describe("resolveAgentConfig", () => {
     expect(cfg.interChunkDelayMs).toBe(1000);
     expect(cfg.modelOverride).toBe("auto");
     expect(cfg.botPaused).toBe(false);
-    expect(cfg.systemPrompt).toContain("Asistente"); // env BOT_NAME
+    expect(cfg.systemPrompt).toContain("Assistant"); // env BOT_NAME
     expect(cfg.systemPrompt).toContain("<role>");
     expect(cfg.systemPrompt).not.toContain("{{");
   });
@@ -150,7 +150,7 @@ describe("resolveAgentConfig — custom_instructions", () => {
   it("suma las instrucciones al prompt generado sin congelarlo", async () => {
     await repo.set(SETTING_KEYS.customInstructions, "Siempre ofrece agendar una cita al final.");
     const cfg = await resolveAgentConfig(env, TOOLS);
-    expect(cfg.systemPrompt).toContain("<instrucciones_del_negocio>");
+    expect(cfg.systemPrompt).toContain("<business_instructions>");
     expect(cfg.systemPrompt).toContain("Siempre ofrece agendar una cita al final.");
     // El resto del cerebro sigue ahí — sumar, no reemplazar:
     expect(cfg.systemPrompt).toContain("<role>");
@@ -160,11 +160,11 @@ describe("resolveAgentConfig — custom_instructions", () => {
 
   it("omite el bloque cuando no hay instrucciones (o son espacios)", async () => {
     let cfg = await resolveAgentConfig(env, TOOLS);
-    expect(cfg.systemPrompt).not.toContain("<instrucciones_del_negocio>");
+    expect(cfg.systemPrompt).not.toContain("<business_instructions>");
 
     await repo.set(SETTING_KEYS.customInstructions, "   ");
     cfg = await resolveAgentConfig(env, TOOLS);
-    expect(cfg.systemPrompt).not.toContain("<instrucciones_del_negocio>");
+    expect(cfg.systemPrompt).not.toContain("<business_instructions>");
   });
 
   it("con un prompt manual activo NO aplican (el override es 'tal cual')", async () => {

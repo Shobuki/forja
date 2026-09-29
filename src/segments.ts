@@ -28,38 +28,38 @@ export interface SegmentDef {
 export const SEGMENTS: SegmentDef[] = [
   {
     id: "quiero_sin_click",
-    label: "Mandaron QUIERO pero NO clickearon la oferta",
-    desc: "Pidieron el link con la keyword y se quedaron a medio camino — el follow-up más caliente.",
+    label: "Sent QUIERO but did not click the offer",
+    desc: "Asked for the keyword link and stopped halfway — the hottest follow-up.",
   },
   {
     id: "click_oferta",
-    label: "Clickearon la oferta",
-    desc: "Ya vieron la página de la oferta — empujón de cierre o resolver la última duda.",
+    label: "Clicked the offer",
+    desc: "Already viewed the offer page — close the sale or resolve the last question.",
   },
   {
     id: "calientes",
-    label: "Leads calientes 🔥",
-    desc: "La IA los etiquetó con intención clara de compra (minería de conversaciones).",
+    label: "Hot leads 🔥",
+    desc: "AI tagged them with clear purchase intent from conversation mining.",
   },
   {
     id: "tibios",
-    label: "Leads tibios 🌤️",
-    desc: "Interesados con dudas sin resolver — mensaje que ataque su objeción.",
+    label: "Warm leads 🌤️",
+    desc: "Interested customers with unanswered questions — send a message that addresses their objection.",
   },
   {
     id: "objecion_precio",
-    label: "Objeción: precio 💰",
-    desc: "No compraron por precio — mensaje del plan mensual o del valor de los bonos.",
+    label: "Objection: price 💰",
+    desc: "Did not buy because of price — send the monthly-plan or value-of-bonuses message.",
   },
   {
     id: "objecion_tiempo",
-    label: "Objeción: tiempo ⏰",
-    desc: "Dijeron “luego lo veo” — recordatorio del deadline del replay.",
+    label: "Objection: timing ⏰",
+    desc: "Said “I will check later” — reminder about the replay deadline.",
   },
   {
     id: "todos",
-    label: "Todos los que han escrito",
-    desc: "Cualquier conversación con al menos un mensaje del cliente.",
+    label: "Everyone who has written",
+    desc: "Any conversation with at least one customer message.",
   },
 ];
 

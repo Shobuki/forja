@@ -11,7 +11,7 @@ export interface SearchKbResult {
 export function searchKbTool(env: Env) {
   return tool({
     description:
-      "Busca en el knowledge base del negocio. Devuelve top-5 chunks con score 0-1. Si top-1 score < 0.7 no hay match útil — escala.",
+      "Search the business knowledge base. Return the top five chunks with a 0–1 score. If the top score is below 0.7, there is no useful match — escalate.",
     inputSchema: z.object({
       query: z.string().min(2).describe("Pregunta o tema a buscar"),
     }),

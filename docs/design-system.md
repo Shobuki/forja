@@ -99,8 +99,8 @@ Copy these. Sizes are the mockup's; keep them consistent.
 Same shape, swap the color var. Text = border = the variant color.
 ```html
 <!-- accent -->  <span style="font-size:9px;color:var(--accent);border:1px solid var(--accent);padding:1px 6px">Lead</span>
-<!-- ok -->      <span style="font-size:9px;color:var(--ok);border:1px solid var(--ok);padding:1px 6px">Resuelta</span>
-<!-- warn -->    <span style="font-size:9px;color:var(--accent-2);border:1px solid var(--accent-2);padding:1px 6px">Sin resolver</span>
+<!-- ok -->      <span style="font-size:9px;color:var(--ok);border:1px solid var(--ok);padding:1px 6px">Resolved</span>
+<!-- warn -->    <span style="font-size:9px;color:var(--accent-2);border:1px solid var(--accent-2);padding:1px 6px">Unresolved</span>
 <!-- bad -->     <span style="font-size:9px;color:var(--bad);border:1px solid var(--bad);padding:1px 6px">Handoff</span>
 <!-- info -->    <span style="font-size:9px;color:var(--info);border:1px solid var(--info);padding:1px 6px">WA</span>
 ```
@@ -126,7 +126,7 @@ inputs are auto-accented (`accent-color:var(--accent)`).
 ```html
 <div class="bg-panel border border-line p-4">
   <div class="font-display font-bold text-[30px] leading-none">142</div>
-  <div class="text-[11px] text-muted mt-1">Conversaciones analizadas</div>
+  <div class="text-[11px] text-muted mt-1">Analyzed conversations</div>
   <div class="text-[10px] text-dim mt-0.5">últimos 7 días</div>
 </div>
 ```
@@ -204,9 +204,9 @@ bar-chart-3 · `costs` receipt.
 - ❌ Don't invent new colors — use the tokens in §1 only.
 - ❌ Don't touch htmx attributes (`hx-*`), element `id`s, route paths, or form
   field `name`s. Restyle markup, don't rewire it.
-- ❌ Don't change visible text strings / labels (tests and users depend on them):
-  keep the Spanish labels, tab names, status strings like `🟢 bot activo`,
-  emojis, tool names, etc.
+- ❌ Don't change visible text strings / labels without updating the matching
+  tests and product copy. Keep route paths, field names, emojis, and tool names
+  stable even when translating user-facing copy.
 - ❌ Don't redefine the global classes or re-add the page title / online pill
   (§4, §5).
 - ❌ Don't add heavy client JS — htmx + the shell's lucide re-init is the model.

@@ -57,8 +57,8 @@ describe("KB tab", () => {
     const res = await adminApp.request("/kb", { headers: AUTH }, env);
     expect(res.status).toBe(200);
     const html = await res.text();
-    expect(html).toContain("Conocimiento del bot");
-    expect(html).toContain("Nuevo documento");
+    expect(html).toContain("Bot knowledge");
+    expect(html).toContain("New document");
   });
 
   it("save persists the doc AND indexes it into Vectorize", async () => {

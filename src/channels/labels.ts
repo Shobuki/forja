@@ -13,6 +13,7 @@ export const CHANNEL_LABELS: Record<string, string> = {
   instagram: "Instagram",
   messenger: "Messenger",
   manychat: "ManyChat",
+  web: "Website",
 };
 
 export function channelLabel(channel: string | null | undefined): string {
@@ -42,7 +43,7 @@ export function configuredChannels(env: Env): ConfiguredChannel[] {
     out.push({ id: "messenger", label: "Messenger", detail: "Meta oficial" });
   }
   if (env.MANYCHAT_API_KEY) {
-    out.push({ id: "manychat", label: "ManyChat", detail: "IG/FB vía ManyChat" });
+    out.push({ id: "manychat", label: "ManyChat", detail: "IG/FB through ManyChat" });
   }
   return out;
 }

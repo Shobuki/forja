@@ -231,3 +231,30 @@ describe("inbox — filtros por sentimiento del Analista", () => {
     expect(hc).not.toContain("Enojado");
   });
 });
+
+describe("inbox - website owner reply", () => {
+  it("stores a public owner message without using a channel adapter", async () => {
+    const conv = await convs.getOrCreate("web", "web-session-123", "Website visitor");
+    await msgs.append(conv.id, "user", "Can I hire you?");
+
+    const res = await adminApp.request(
+      `/conversations/${encodeURIComponent(conv.id)}/reply`,
+      { method: "POST", headers: FORM, body: new URLSearchParams({ text: "Yes, send me the project details." }) },
+      env,
+    );
+
+    expect(res.status).toBe(200);
+    expect(res.headers.get("X-Sent")).toBe("1");
+    expect(await res.text()).toContain("Sent to website chat");
+    expect(pickAdapterMock).not.toHaveBeenCalled();
+
+    const history = await msgs.lastN(conv.id, 10);
+    expect(history[history.length - 1].role).toBe("owner");
+    expect(history[history.length - 1].owner_visible).toBe(1);
+    expect(await convs.isPaused(conv.id)).toBe(true);
+
+    const publicMessages = await msgs.publicOwnerMessagesSince(conv.id, 0);
+    expect(publicMessages).toHaveLength(1);
+    expect(publicMessages[0].content).toBe("Yes, send me the project details.");
+  });
+});

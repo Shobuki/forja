@@ -1,53 +1,27 @@
-# Forja — instrucciones para Claude Code
+# Forja — development instructions
 
-Este repo es **Forja**, un chatbot de soporte con IA open source: un Worker de
-Cloudflare (Hono + Vercel AI SDK + D1 + Vectorize + R2) con panel de administración
-en `/admin`. Quien lo clona probablemente **no sabe programar** — tú corres todo por él.
+Forja is an open-source Cloudflare Worker chatbot built with Hono, the Vercel AI SDK, D1, Vectorize, R2, and Durable Objects. The admin dashboard is mounted at `/admin`.
 
-## Instalación (si no existe `.bot-state.json`)
+## Working rules
 
-Sigue el skill **`/configurar-mi-chatbot`** (en `skill/`; si no está registrado, abre
-el archivo directo). Son 4 fases y el orden no se negocia:
+- Use English for code comments, UI copy, prompts, documentation, and generated messages.
+- Preserve the existing API, database schema, channel identifiers, and environment variable names unless the task explicitly changes them.
+- Never commit tokens or API keys. Use `wrangler secret put`.
+- Treat `member/` as user-owned configuration. Preserve it during updates.
+- Run `pnpm typecheck` and `pnpm test` before deployment when source code changes.
+- Do not deploy, commit, or push without explicit approval.
 
-1. **TU PLATAFORMA** — provisiona Cloudflare (D1/Vectorize/R2), guarda la API key del
-   cerebro + `DASHBOARD_PASSWORD`, y despliega. Al terminar, su panel vive en
-   `https://<worker>.workers.dev/admin`.
-2. **TU CHATBOT** — negocio, tareas, idioma y base de conocimiento.
-3. **TUS CONEXIONES** — canales uno por uno (Telegram, WhatsApp, Meta…) desde `/admin`.
-4. **PRUEBA FINAL** — mensaje real + resumen sin badges rojos.
+## Important files
 
-Antes de la Fase 1: verifica que existan **Node ≥18** y **pnpm** (`corepack enable pnpm`
-si falta), y explícale al usuario cómo funciona y cuánto cuesta — vive en SU cuenta de
-Cloudflare (~gratis, ~$5/mes con tráfico) y el cerebro es su propia llave de IA (~$1–2/mes).
+- `src/index.ts` — webhooks and HTTP routes.
+- `src/agent.ts` — buffered SupportAgent Durable Object.
+- `src/system-prompt.ts` — generated agent prompt.
+- `src/llm/provider.ts` — Anthropic, OpenAI, xAI, and MiMo provider selection.
+- `src/admin/` — admin dashboard views and routes.
+- `src/channels/` — WhatsApp, Twilio, Telegram, Meta, and ManyChat adapters.
+- `src/kb/` — knowledge-base indexing and Vectorize search.
+- `test/` — Vitest tests.
 
-## Reglas
+## Deployment
 
-- **Habla en español sencillo (LATAM)**, una pregunta a la vez.
-- **Nunca pegues tokens/keys en el chat** — siempre `wrangler secret put`.
-- **No toques `member/`** más allá de lo que indican los skills (ahí viven los datos del
-  negocio del usuario; se respetan en cada actualización).
-- Package manager: **pnpm** — `pnpm dev`, `pnpm run deploy`, `pnpm typecheck`, `pnpm test`,
-  `pnpm db:apply:remote`. Corre `pnpm test` antes de cualquier deploy si tocaste `src/`.
-
-## Mapa rápido
-
-- `src/index.ts` — webhooks de canales (Telegram, WhatsApp, Meta…).
-- `src/agent.ts` — el Durable Object que piensa y responde (buffer + tools).
-- `src/llm/provider.ts` — el cerebro (Anthropic / OpenAI / xAI, con llave propia).
-- `src/admin/` — el panel (`/admin`): Resumen, Conversaciones, Conexiones, Config, KB, Costos.
-- `src/tools/` — searchKb, handoffHuman, pauseBot, captureLead, scheduleAppointment, catalogQuery.
-- `src/niches/` — el "niche pack" genérico (Starter). Personaliza tono/columnas del panel.
-- `skill/` — asistentes para el usuario.
-
-## Skills disponibles
-
-- `/configurar-mi-chatbot` — instalación de cero (las 4 fases).
-- `/reporte` — informe mensual de valor para el cliente.
-- `/exportar` — exporta leads y conversaciones (CSV/JSON).
-- `/actualizar-mi-bot` — trae la última versión conservando tu config.
-
-## ¿Quieres más? (Forja+)
-
-Este repo es el **Starter** genérico, sirve para cualquier negocio. Los **14 giros con
-panel a la medida**, los comandos que trabajan por ti (mantenimiento, campaña, Modo
-Agencia para revender…) y la comunidad viven en **Forja+** → https://horizontesia.com
+Install dependencies with `pnpm install`, configure `wrangler.toml`, store secrets with Wrangler, and deploy with `pnpm run deploy` only after approval.

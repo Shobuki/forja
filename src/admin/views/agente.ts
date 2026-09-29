@@ -23,13 +23,14 @@ function esc(s: string): string {
 }
 
 function ago(ms: number | null | undefined): string {
-  if (!ms) return "nunca";
+  if (!ms) return "never";
   const min = Math.floor((Date.now() - ms) / 60_000);
-  if (min < 1) return "ahora";
-  if (min < 60) return `hace ${min} min`;
+  if (min < 1) return "now";
+  if (min < 60) return `${min} min ago`;
   const h = Math.floor(min / 60);
-  if (h < 24) return `hace ${h} h`;
-  return `hace ${Math.floor(h / 24)} d`;
+  if (h < 24) return `${h} hr ago`;
+  const days = Math.floor(h / 24);
+  return `${days} day${days === 1 ? "" : "s"} ago`;
 }
 
 /** A node lights up when it saw activity within this window. */
@@ -48,46 +49,46 @@ interface ToolMeta {
 
 const TOOL_META: Record<string, ToolMeta> = {
   searchKb: {
-    label: "Buscar conocimiento",
-    desc: "Busca en la base de conocimiento del negocio antes de responder. Es la fuente de verdad del bot.",
+    label: "Search knowledge",
+    desc: "Searches the business knowledge base before replying. It is the bot's source of truth.",
     icon: "book-open",
     critical: true,
   },
   handoffHuman: {
-    label: "Pasar a humano",
-    desc: "Escala la conversación a una persona: crea un ticket y te avisa por Telegram/WhatsApp.",
+    label: "Hand off to a human",
+    desc: "Escalates the conversation to a human, creates a ticket, and alerts you through Telegram/WhatsApp.",
     icon: "user-round",
     critical: true,
   },
   pauseBot: {
-    label: "Pausar bot",
-    desc: "Silencia al bot en una conversación específica (por ejemplo cuando el cliente pide hablar contigo).",
+    label: "Pause bot",
+    desc: "Mutes the bot in a specific conversation, for example when the customer asks to speak with you.",
     icon: "pause",
   },
   snoozeUser: {
-    label: "Descansar usuario",
-    desc: "Guardrail de abuso: manda a cooldown (default 1h) a quien insulta, spamea, es otro bot o usa al bot como ChatGPT gratis — el bot ignora sus mensajes ese rato.",
+    label: "Snooze user",
+    desc: "Abuse guardrail: puts insults, spam, other bots, or free-ChatGPT behavior into a cooldown (default 1 hour). The bot ignores messages during that time.",
     icon: "shield",
   },
   captureLead: {
-    label: "Capturar lead",
-    desc: "Guarda los datos del cliente interesado (nombre, contacto, intención) en la tabla de leads.",
+    label: "Capture lead",
+    desc: "Stores interested-customer details (name, contact, intent) in the leads table.",
     icon: "user-plus",
   },
   scheduleAppointment: {
-    label: "Agendar cita",
-    desc: "Agenda una cita con el cliente y la registra para tu seguimiento.",
+    label: "Schedule appointment",
+    desc: "Books an appointment with the customer and records it for follow-up.",
     icon: "calendar",
   },
   catalogQuery: {
-    label: "Consultar catálogo",
-    desc: "Consulta el catálogo de productos/servicios del negocio para responder con precios y opciones reales.",
+    label: "Search catalog",
+    desc: "Searches the business catalog to answer with real prices and options.",
     icon: "package",
   },
 };
 
 function toolMeta(name: string): ToolMeta {
-  return TOOL_META[name] ?? { label: name, desc: "Tool personalizada de esta instancia.", icon: "wrench" };
+  return TOOL_META[name] ?? { label: name, desc: "Custom tool for this instance.", icon: "wrench" };
 }
 
 /** lucide icon per channel id — falls back to a generic radio icon. */
@@ -222,14 +223,14 @@ function nodeHtml(n: NodeSpec): string {
            : "background:var(--panel2);border:1px solid var(--linelit);"
        }${n.off ? "opacity:.55;" : ""}"
        hx-get="/admin/agente/node/${encodeURIComponent(n.id)}" hx-target="#modal-root" hx-swap="innerHTML"
-       title="Configurar">
+       title="Configure">
     <div class="flex items-center gap-2">
       <span class="w-[22px] h-[22px] flex-none flex items-center justify-center" style="border:1px solid ${n.accent};background:${n.on ? "rgba(127,183,126,.18)" : "var(--panel2)"}">
         <i data-lucide="${n.icon}" width="13" height="13" style="color:${n.accent}"></i>
       </span>
       <span class="font-display font-semibold text-cream whitespace-nowrap overflow-hidden text-ellipsis" style="font-size:${n.big ? "14px" : "12.5px"}">${esc(n.title)}</span>
       ${n.off ? `<span class="ml-auto text-[8.5px] tracking-[.1em]" style="color:var(--dim);border:1px solid var(--linelit);padding:0 4px">OFF</span>` : ""}
-      ${n.on ? `<span class="ml-auto text-[8.5px] tracking-[.1em] font-semibold" style="color:var(--ok);border:1px solid var(--ok);padding:0 4px;background:rgba(127,183,126,.12)">● ACTIVO</span>` : ""}
+      ${n.on ? `<span class="ml-auto text-[8.5px] tracking-[.1em] font-semibold" style="color:var(--ok);border:1px solid var(--ok);padding:0 4px;background:rgba(127,183,126,.12)">● ACTIVE</span>` : ""}
     </div>
     <div class="text-[10.5px] mt-1 leading-snug" style="color:var(--muted)">${n.caption}</div>
     ${n.count ? `<div class="text-[9.5px] mt-1.5" style="color:var(--accent)">${esc(n.count)}</div>` : ""}
@@ -287,8 +288,8 @@ export async function renderAgenteCanvas(env: Env): Promise<string> {
       icon: channelIcon(ch.channel),
       title: channelLabel(ch.channel),
       caption: ch.convs === 0
-        ? "configurado · sin tráfico aún"
-        : `${ch.convs} ${ch.convs === 1 ? "conversación" : "conversaciones"}`,
+        ? "Configured · no traffic yet"
+        : `${ch.convs} ${ch.convs === 1 ? "conversation" : "conversations"}`,
       accent: ch.convs === 0 ? "var(--dim)" : "var(--ok)",
       live,
       on: ch.convs > 0,
@@ -305,7 +306,7 @@ export async function renderAgenteCanvas(env: Env): Promise<string> {
     x: BUF.x, y: midY - BUF.h / 2, w: BUF.w,
     icon: "layers",
     title: "Buffer",
-    caption: `agrupa mensajes · ${Math.round(d.cfg.bufferMs / 1000)} s`,
+    caption: `groups messages · ${Math.round(d.cfg.bufferMs / 1000)} s`,
     accent: "var(--accent)",
     live: false,
   });
@@ -317,8 +318,8 @@ export async function renderAgenteCanvas(env: Env): Promise<string> {
     id: "brain",
     x: BRAIN.x, y: midY - BRAIN.h / 2, w: BRAIN.w,
     icon: "cpu",
-    title: d.cfg.botPaused ? "Agente ⏸" : "Agente",
-    caption: `${d.settings[SETTING_KEYS.systemPromptOverride]?.trim() ? "prompt personalizado" : "prompt automático"} · máx 6 pasos`,
+    title: d.cfg.botPaused ? "Agent ⏸" : "Agent",
+    caption: `${d.settings[SETTING_KEYS.systemPromptOverride]?.trim() ? "custom prompt" : "automatic prompt"} · max 6 steps`,
     accent: "var(--accent)",
     live: brainLive,
     count: `${d.turns30d} turnos/30d`,
@@ -333,7 +334,7 @@ export async function renderAgenteCanvas(env: Env): Promise<string> {
     x: REPLY.x, y: midY - REPLY.h / 2, w: REPLY.w,
     icon: "message-square-reply",
     title: "Respuesta",
-    caption: `máx ${d.cfg.maxChunks} mensajes · ${(d.cfg.interChunkDelayMs / 1000).toFixed(1)} s entre msgs`,
+    caption: `max ${d.cfg.maxChunks} messages · ${(d.cfg.interChunkDelayMs / 1000).toFixed(1)} s between messages`,
     accent: "var(--ok)",
     live: false,
   });
@@ -345,7 +346,7 @@ export async function renderAgenteCanvas(env: Env): Promise<string> {
     id: "model",
     x: modelNode.x, y: modelNode.y, w: modelNode.w,
     icon: "brain-circuit",
-    title: "Modelo",
+    title: "Model",
     caption: esc(modelLabel(env, d.cfg)),
     accent: "var(--violet)",
     live: false,
@@ -355,7 +356,7 @@ export async function renderAgenteCanvas(env: Env): Promise<string> {
     x: memNode.x, y: memNode.y, w: memNode.w,
     icon: "database",
     title: "Memoria",
-    caption: "D1 · últimos 20 mensajes",
+    caption: "D1 · latest 20 messages",
     accent: "var(--violet)",
     live: false,
   });
@@ -403,19 +404,19 @@ export async function renderAgentePage(env: Env): Promise<string> {
   const body = `
     <div class="flex flex-col gap-3.5">
       <div class="flex flex-wrap items-center gap-3.5">
-        <p class="text-[12px] max-w-[520px] leading-relaxed" style="color:var(--muted)">Así funciona tu bot por dentro — una radiografía en vivo. Haz clic en cualquier nodo para ver y ajustar su configuración.</p>
+        <p class="text-[12px] max-w-[520px] leading-relaxed" style="color:var(--muted)">This is how your bot works inside — a live x-ray. Click any node to view and adjust its settings.</p>
         <div class="ml-auto flex items-center gap-4 text-[10.5px]" style="color:var(--dim)">
-          <span class="flex items-center gap-1.5"><span class="inline-block w-4 h-0.5 align-middle" style="background:var(--accent)"></span>flujo de mensajes</span>
-          <span class="flex items-center gap-1.5"><span class="inline-block w-4 align-middle" style="border-top:1.5px dashed var(--muted)"></span>recursos del agente</span>
-          <span class="flex items-center gap-1.5"><span class="inline-block w-2 h-2 rounded-full align-middle" style="background:var(--ok)"></span>actividad en los últimos 5 min</span>
+          <span class="flex items-center gap-1.5"><span class="inline-block w-4 h-0.5 align-middle" style="background:var(--accent)"></span>message flow</span>
+          <span class="flex items-center gap-1.5"><span class="inline-block w-4 align-middle" style="border-top:1.5px dashed var(--muted)"></span>agent resources</span>
+          <span class="flex items-center gap-1.5"><span class="inline-block w-2 h-2 rounded-full align-middle" style="background:var(--ok)"></span>activity in the last 5 min</span>
         </div>
       </div>
       <div id="canvas-wrap" hx-get="/admin/agente/canvas" hx-trigger="every 15s, canvas-refresh from:body" hx-swap="innerHTML">
         ${canvas}
       </div>
-      <p class="text-[10.5px]" style="color:var(--dim)">El flujo es fijo — es una radiografía honesta, no un editor. Los cambios de cada nodo aplican desde el siguiente mensaje.</p>
+      <p class="text-[10.5px]" style="color:var(--dim)">The flow is fixed — it is an honest x-ray, not an editor. Node changes apply from the next message.</p>
     </div>`;
-  return layout({ title: "Mi Agente", activeTab: "agente", body, env });
+  return layout({ title: "My Agent", activeTab: "agente", body, env });
 }
 
 // --- Node modal (pop-up, editable) ---------------------------------------------
@@ -425,7 +426,7 @@ export function toastOob(msg: string): string {
   return `<div id="toast-root" hx-swap-oob="innerHTML"><div class="toast text-[12.5px] px-4 py-2.5">${esc(msg)}</div></div>`;
 }
 
-const SAVED_BANNER = `<div class="px-3 py-2 text-[12.5px] mb-4" style="border:1px solid var(--ok);background:rgba(127,183,126,.08);color:var(--ok)">✓ Guardado — aplica desde el siguiente mensaje.</div>`;
+const SAVED_BANNER = `<div class="px-3 py-2 text-[12.5px] mb-4" style="border:1px solid var(--ok);background:rgba(127,183,126,.08);color:var(--ok)">✓ Saved — applies from the next message.</div>`;
 
 function modalShell(icon: string, title: string, badge: string, inner: string, saved = false): string {
   return `
@@ -471,7 +472,7 @@ function slider(opts: {
   </div>`;
 }
 
-const SAVE_BTN = `<button type="submit" class="bigbtn font-display font-bold text-[12.5px] cursor-pointer" style="background:var(--accent);border:1px solid var(--accent);color:#1a1206;box-shadow:3px 3px 0 var(--linelit);padding:8px 16px">Guardar</button>`;
+const SAVE_BTN = `<button type="submit" class="bigbtn font-display font-bold text-[12.5px] cursor-pointer" style="background:var(--accent);border:1px solid var(--accent);color:#1a1206;box-shadow:3px 3px 0 var(--linelit);padding:8px 16px">Save</button>`;
 
 function saveForm(nodeId: string, inner: string): string {
   return `
@@ -485,27 +486,27 @@ export async function renderNodeModal(env: Env, nodeId: string, saved = false): 
   const d = await loadAgenteData(env);
 
   if (nodeId === "buffer") {
-    return modalShell("layers", "Buffer de mensajes", "", saveForm("buffer", `
-      <p class="text-[12.5px] mb-4 leading-relaxed" style="color:var(--muted)">Cuando el cliente manda varios mensajes seguidos, el bot espera este tiempo y los responde juntos — así no contesta a medias.</p>
+    return modalShell("layers", "Message buffer", "", saveForm("buffer", `
+      <p class="text-[12.5px] mb-4 leading-relaxed" style="color:var(--muted)">When a customer sends several messages in a row, the bot waits this long and answers them together instead of replying halfway through.</p>
       ${slider({
-        name: "buffer_seconds", label: "Tiempo de espera",
+        name: "buffer_seconds", label: "Wait time",
         min: 3, max: 30, step: 1, value: Math.round(d.cfg.bufferMs / 1000), unit: " s",
-        hint: "Corto = responde más rápido · Largo = agrupa mejor los mensajes del cliente.",
+        hint: "Shorter = faster replies · longer = better grouping of customer messages.",
       })}`), saved);
   }
 
   if (nodeId === "reply") {
-    return modalShell("message-square-reply", "Respuesta", "", saveForm("reply", `
-      <p class="text-[12.5px] mb-4 leading-relaxed" style="color:var(--muted)">Las respuestas largas se parten en varios mensajes con una pausa entre cada uno — se siente como escribe una persona, no un muro de texto.</p>
+    return modalShell("message-square-reply", "Reply", "", saveForm("reply", `
+      <p class="text-[12.5px] mb-4 leading-relaxed" style="color:var(--muted)">Long replies are split into several messages with a pause between each one — it feels human instead of like a wall of text.</p>
       ${slider({
-        name: "max_chunks", label: "Máximo de mensajes por respuesta",
+        name: "max_chunks", label: "Maximum messages per reply",
         min: 1, max: 5, step: 1, value: d.cfg.maxChunks, unit: "",
-        hint: "1 = todo en un solo mensaje · 5 = respuestas bien partidas.",
+        hint: "1 = everything in one message · 5 = well-split replies.",
       })}
       ${slider({
-        name: "inter_chunk_delay_s", label: "Pausa entre mensajes",
+        name: "inter_chunk_delay_s", label: "Pause between messages",
         min: 0, max: 5, step: 0.25, value: +(d.cfg.interChunkDelayMs / 1000).toFixed(2), unit: " s",
-        hint: "El tiempo que 'escribe' entre un mensaje y el siguiente.",
+        hint: "The time it appears to 'type' between one message and the next.",
       })}`), saved);
   }
 
@@ -520,29 +521,29 @@ export async function renderNodeModal(env: Env, nodeId: string, saved = false): 
           <span class="block text-[10px] text-dim mt-1 leading-snug">${desc}</span>
         </span>
       </label>`;
-    return modalShell("brain-circuit", "Modelo de IA", "", saveForm("model", `
-      <p class="text-[12.5px] mb-3" style="color:var(--muted)">Qué cerebro usa tu bot: <span class="font-mono text-[11px]" style="color:var(--dim)">${esc(modelLabel(env, d.cfg))}</span></p>
+    return modalShell("brain-circuit", "AI model", "", saveForm("model", `
+      <p class="text-[12.5px] mb-3" style="color:var(--muted)">Which brain your bot uses: <span class="font-mono text-[11px]" style="color:var(--dim)">${esc(modelLabel(env, d.cfg))}</span></p>
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-5">
-        ${card("auto", "scale", "⚡ Auto", "Rápido para lo cotidiano, inteligente cuando se complica. Mejor costo/calidad.")}
-        ${card("haiku", "feather", "🪶 Rápido", "Siempre el modelo barato. Máximo ahorro.")}
-        ${card("sonnet", "brain", "🧠 Inteligente", "Siempre el modelo potente. Máxima calidad, cuesta más.")}
+        ${card("auto", "scale", "⚡ Auto", "Fast for everyday tasks, smarter when things get complex. Best cost/quality balance.")}
+        ${card("haiku", "feather", "🪶 Fast", "Always use the inexpensive model. Maximum savings.")}
+        ${card("sonnet", "brain", "🧠 Smart", "Always use the powerful model. Maximum quality, higher cost.")}
       </div>
       ${slider({
-        name: "temperature", label: "Temperatura (creatividad)",
+        name: "temperature", label: "Temperature (creativity)",
         min: 0, max: 1, step: 0.05, value: d.cfg.temperature ?? 1, unit: "",
-        hint: "0 = respuestas consistentes y predecibles · 1 = más variadas y creativas.",
+        hint: "0 = consistent and predictable replies · 1 = more varied and creative replies.",
       })}`), saved);
   }
 
   if (nodeId === "brain") {
     const hasOverride = !!d.settings[SETTING_KEYS.systemPromptOverride]?.trim();
     const badge = d.cfg.botPaused
-      ? `<span class="text-[9.5px]" style="color:var(--dim);border:1px solid var(--linelit);padding:1px 8px">⏸ pausado</span>`
-      : `<span class="text-[9.5px]" style="color:var(--ok);border:1px solid var(--ok);padding:1px 8px">● activo</span>`;
-    return modalShell("cpu", "Agente (el cerebro)", badge, `
+      ? `<span class="text-[9.5px]" style="color:var(--dim);border:1px solid var(--linelit);padding:1px 8px">⏸ paused</span>`
+      : `<span class="text-[9.5px]" style="color:var(--ok);border:1px solid var(--ok);padding:1px 8px">● active</span>`;
+    return modalShell("cpu", "Agent (the brain)", badge, `
       <div class="text-[12.5px] space-y-1 mb-4" style="color:var(--muted)">
-        <div><b class="text-cream">Modelo:</b> <span class="font-mono text-[11px]">${esc(modelLabel(env, d.cfg))}</span></div>
-        <div><b class="text-cream">Turnos respondidos (30 días):</b> ${d.turns30d}</div>
+        <div><b class="text-cream">Model:</b> <span class="font-mono text-[11px]">${esc(modelLabel(env, d.cfg))}</span></div>
+        <div><b class="text-cream">Replied turns (30 days):</b> ${d.turns30d}</div>
         <div><b class="text-cream">Tools activas:</b> ${d.cfg.enabledToolNames.length} de ${d.toolNames.length}</div>
       </div>
 
@@ -553,64 +554,64 @@ export async function renderNodeModal(env: Env, nodeId: string, saved = false): 
                   ? "background:var(--accent);border:1px solid var(--accent);color:#1a1206;box-shadow:3px 3px 0 var(--linelit);padding:9px 16px"
                   : "background:var(--panel2);border:1px solid var(--line);color:var(--muted);padding:9px 16px"}">
           <i data-lucide="${d.cfg.botPaused ? "play" : "pause"}" width="14" height="14"></i>
-          ${d.cfg.botPaused ? "Reactivar el bot" : "Pausar el bot (todas las conversaciones)"}
+          ${d.cfg.botPaused ? "Resume bot" : "Pause bot (all conversations)"}
         </button>
       </form>
 
       <form hx-post="/admin/agente/node/brain/save" hx-target="#modal-root" hx-swap="innerHTML" class="mb-5">
         <div class="flex items-center justify-between mb-1.5">
-          <label for="custom_instructions" class="text-[12.5px] font-medium text-cream">✍️ Instrucciones</label>
-          <span class="text-[9.5px] tracking-[.05em]" style="color:var(--ok);border:1px solid var(--ok);padding:1px 7px">se suman</span>
+          <label for="custom_instructions" class="text-[12.5px] font-medium text-cream">✍️ Instructions</label>
+          <span class="text-[9.5px] tracking-[.05em]" style="color:var(--ok);border:1px solid var(--ok);padding:1px 7px">additive</span>
         </div>
-        <p class="text-[11px] mb-2 leading-relaxed" style="color:var(--dim)">Reglas para tu bot — "siempre ofrece agendar una cita al final", "no des precios por chat". Esto se <b>suma</b> al prompt automático: tu información del negocio, el playbook y la base de conocimiento quedan intactos.${hasOverride
-          ? ` <span style="color:var(--accent-2)">⚠ Tienes un prompt manual activo: estas instrucciones no aplican hasta que vuelvas al automático (abajo).</span>`
+        <p class="text-[11px] mb-2 leading-relaxed" style="color:var(--dim)">Rules for your bot — "always offer to schedule an appointment at the end", "do not give prices in chat". These are <b>added</b> to the automatic prompt: your business information, playbook, and knowledge base remain intact.${hasOverride
+          ? ` <span style="color:var(--accent-2)">⚠ A manual prompt is active: these instructions do not apply until you return to automatic mode below.</span>`
           : ""}</p>
         <textarea id="custom_instructions" name="custom_instructions" rows="4"
-                  placeholder="Ej. Siempre ofrece agendar una cita al final."
+                  placeholder="Example: Always offer to schedule an appointment at the end."
                   class="w-full font-mono text-[11px] p-3 outline-none resize-y"
                   style="background:var(--bg);border:1px solid var(--line);color:var(--cream)">${esc(d.settings[SETTING_KEYS.customInstructions] ?? "")}</textarea>
-        <button type="submit" class="ghostbtn text-[12.5px] cursor-pointer mt-2" style="background:var(--panel2);border:1px solid var(--line);color:var(--muted);padding:8px 16px">Guardar instrucciones</button>
+        <button type="submit" class="ghostbtn text-[12.5px] cursor-pointer mt-2" style="background:var(--panel2);border:1px solid var(--line);color:var(--muted);padding:8px 16px">Save instructions</button>
       </form>
 
       <form hx-post="/admin/agente/node/brain/save" hx-target="#modal-root" hx-swap="innerHTML">
         <div class="flex items-center justify-between mb-1.5">
-          <label for="system_prompt_override" class="text-[12.5px] font-medium text-cream">Prompt del agente</label>
-          <span class="text-[9.5px] tracking-[.05em]" style="color:${hasOverride ? "var(--accent-2)" : "var(--info)"};border:1px solid ${hasOverride ? "var(--accent-2)" : "var(--info)"};padding:1px 7px">${hasOverride ? "✍ manual" : "⚙ automático"}</span>
+          <label for="system_prompt_override" class="text-[12.5px] font-medium text-cream">Agent prompt</label>
+          <span class="text-[9.5px] tracking-[.05em]" style="color:${hasOverride ? "var(--accent-2)" : "var(--info)"};border:1px solid ${hasOverride ? "var(--accent-2)" : "var(--info)"};padding:1px 7px">${hasOverride ? "✍ manual" : "⚙ automatic"}</span>
         </div>
-        <p class="text-[11px] mb-2 leading-relaxed" style="color:var(--dim)">Este es el prompt efectivo — exactamente lo que Claude recibe. ${hasOverride
-          ? "Estás en modo manual: el texto de abajo se usa tal cual."
-          : "Se genera solo con la información del negocio. Si lo editas y guardas, se congela como prompt manual y deja de actualizarse automáticamente."}</p>
+        <p class="text-[11px] mb-2 leading-relaxed" style="color:var(--dim)">This is the effective prompt — exactly what Claude receives. ${hasOverride
+          ? "Manual mode is active: the text below is used as-is."
+          : "It is generated from the business information. If you edit and save it, it becomes a manual prompt and stops updating automatically."}</p>
         <textarea id="system_prompt_override" name="system_prompt_override" rows="14" required
                   class="w-full font-mono text-[11px] p-3 outline-none resize-y"
                   style="background:var(--bg);border:1px solid var(--line);color:var(--cream)">${esc(d.cfg.systemPrompt)}</textarea>
         <div class="flex flex-wrap gap-2 mt-3">
-          <button type="submit" class="bigbtn font-display font-bold text-[12.5px] cursor-pointer" style="background:var(--accent);border:1px solid var(--accent);color:#1a1206;box-shadow:3px 3px 0 var(--linelit);padding:8px 16px">Guardar prompt manual</button>
-          ${hasOverride ? `<button type="submit" name="action" value="reset" formnovalidate class="ghostbtn text-[12.5px] cursor-pointer" style="background:var(--panel2);border:1px solid var(--line);color:var(--muted);padding:8px 16px">⚙ Volver al automático</button>` : ""}
+          <button type="submit" class="bigbtn font-display font-bold text-[12.5px] cursor-pointer" style="background:var(--accent);border:1px solid var(--accent);color:#1a1206;box-shadow:3px 3px 0 var(--linelit);padding:8px 16px">Save manual prompt</button>
+          ${hasOverride ? `<button type="submit" name="action" value="reset" formnovalidate class="ghostbtn text-[12.5px] cursor-pointer" style="background:var(--panel2);border:1px solid var(--line);color:var(--muted);padding:8px 16px">⚙ Return to automatic</button>` : ""}
         </div>
       </form>`, saved);
   }
 
   if (nodeId === "memory") {
     return modalShell("database", "Memoria", "", `
-      <p class="text-[12.5px] leading-relaxed" style="color:var(--muted)">El bot recuerda los <b class="text-cream">últimos 20 mensajes</b> de cada conversación (guardados en la base D1). Los mensajes con más de 90 días se borran automáticamente cada noche.</p>`);
+      <p class="text-[12.5px] leading-relaxed" style="color:var(--muted)">The bot remembers the <b class="text-cream">latest 20 messages</b> in each conversation (stored in D1). Messages older than 90 days are deleted automatically every night.</p>`);
   }
 
   if (nodeId.startsWith("channel:")) {
     const name = nodeId.slice("channel:".length);
     const ch = d.channels.find((c) => c.channel === name);
-    if (!ch) return modalShell("radio", "Canal", "", `<p class="text-[12.5px]" style="color:var(--dim)">Canal sin actividad.</p>`);
-    return modalShell(channelIcon(ch.channel), `Canal: ${esc(channelLabel(ch.channel))}`, "", `
+    if (!ch) return modalShell("radio", "Channel", "", `<p class="text-[12.5px]" style="color:var(--dim)">No channel activity.</p>`);
+    return modalShell(channelIcon(ch.channel), `Channel: ${esc(channelLabel(ch.channel))}`, "", `
       <div class="text-[12.5px] space-y-1 mb-3" style="color:var(--muted)">
-        <div><b class="text-cream">Conversaciones:</b> ${ch.convs}</div>
-        <div><b class="text-cream">Última actividad:</b> ${ago(ch.last)}</div>
+        <div><b class="text-cream">Conversations:</b> ${ch.convs}</div>
+        <div><b class="text-cream">Last activity:</b> ${ago(ch.last)}</div>
       </div>
-      <a href="/admin/conversations" class="text-[12.5px] hover:underline">Ver conversaciones →</a>`);
+      <a href="/admin/conversations" class="text-[12.5px] hover:underline">View conversations →</a>`);
   }
 
   if (nodeId.startsWith("tool:")) {
     const name = nodeId.slice("tool:".length);
     if (!d.toolNames.includes(name)) {
-      return modalShell("wrench", "Tool", "", `<p class="text-[12.5px]" style="color:var(--dim)">Tool no encontrada.</p>`);
+      return modalShell("wrench", "Tool", "", `<p class="text-[12.5px]" style="color:var(--dim)">Tool not found.</p>`);
     }
     const meta = toolMeta(name);
     const u = d.usage.get(name);
@@ -619,24 +620,24 @@ export async function renderNodeModal(env: Env, nodeId: string, saved = false): 
       meta.icon,
       `${esc(meta.label)} <span class="font-mono text-[11px]" style="color:var(--dim)">(${esc(name)})</span>`,
       off
-        ? `<span class="text-[9.5px]" style="color:var(--dim);border:1px solid var(--linelit);padding:1px 8px">apagada</span>`
-        : `<span class="text-[9.5px]" style="color:var(--ok);border:1px solid var(--ok);padding:1px 8px">encendida</span>`,
+        ? `<span class="text-[9.5px]" style="color:var(--dim);border:1px solid var(--linelit);padding:1px 8px">disabled</span>`
+        : `<span class="text-[9.5px]" style="color:var(--ok);border:1px solid var(--ok);padding:1px 8px">enabled</span>`,
       `
       <p class="text-[12.5px] mb-2 leading-relaxed" style="color:var(--muted)">${esc(meta.desc)}</p>
       <div class="text-[12.5px] space-y-1 mb-3" style="color:var(--muted)">
-        <div><b class="text-cream">Llamadas (30 días):</b> ${u?.n ?? 0}</div>
-        <div><b class="text-cream">Última vez usada:</b> ${ago(u?.last)}</div>
+        <div><b class="text-cream">Calls (30 days):</b> ${u?.n ?? 0}</div>
+        <div><b class="text-cream">Last used:</b> ${ago(u?.last)}</div>
       </div>
-      ${meta.critical && !off ? `<div class="text-[11px] mb-3.5 flex items-start gap-2 leading-relaxed" style="color:var(--accent-2);border:1px solid rgba(245,166,35,.35);background:rgba(245,166,35,.08);padding:10px"><i data-lucide="triangle-alert" width="14" height="14" class="flex-none mt-0.5"></i> No recomendamos apagar esta tool: el bot la necesita para funcionar bien.</div>` : ""}
+      ${meta.critical && !off ? `<div class="text-[11px] mb-3.5 flex items-start gap-2 leading-relaxed" style="color:var(--accent-2);border:1px solid rgba(245,166,35,.35);background:rgba(245,166,35,.08);padding:10px"><i data-lucide="triangle-alert" width="14" height="14" class="flex-none mt-0.5"></i> We do not recommend disabling this tool: the bot needs it to work properly.</div>` : ""}
       <form hx-post="/admin/agente/tools/${encodeURIComponent(name)}/toggle" hx-target="#modal-root" hx-swap="innerHTML" class="inline">
         <button class="${off ? "bigbtn font-display font-bold" : "ghostbtn"} text-[12.5px] cursor-pointer"
                 style="${off
                   ? "background:var(--accent);border:1px solid var(--accent);color:#1a1206;box-shadow:3px 3px 0 var(--linelit);padding:9px 16px"
                   : "background:var(--panel2);border:1px solid var(--line);color:var(--muted);padding:9px 16px"}">
-          ${off ? "Encender tool" : "Apagar tool"}
+          ${off ? "Enable tool" : "Disable tool"}
         </button>
       </form>
-      <p class="text-[10.5px] mt-2" style="color:var(--dim)">El cambio aplica desde el siguiente mensaje.</p>`, saved);
+      <p class="text-[10.5px] mt-2" style="color:var(--dim)">The change applies from the next message.</p>`, saved);
   }
 
   return modalShell("box", "Nodo", "", `<p class="text-[12.5px]" style="color:var(--dim)">Nodo desconocido.</p>`);

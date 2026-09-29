@@ -89,8 +89,8 @@ export async function pickFollowupCandidates(
 }
 
 const REASON_HINT: Record<FollowupReason, string> = {
-  hot: "El Analista detectó que quedó una venta o interés abierto sin cerrar.",
-  active: "Hizo varias preguntas (interés alto) y luego dejó de responder.",
+  hot: "The Analyst found an open sale or unresolved purchase interest.",
+  active: "The customer asked several questions (high interest) and then stopped replying.",
 };
 
 export interface RunFollowupsResult {
@@ -152,20 +152,20 @@ export async function runFollowups(
     try {
       const history = await msgs.lastN(cand.id, 6);
       const transcript = history
-        .map((m) => `${m.role === "user" ? "Cliente" : "Tú"}: ${m.content.slice(0, 300)}`)
+        .map((m) => `${m.role === "user" ? "Customer" : "You"}: ${m.content.slice(0, 300)}`)
         .join("\n");
 
       const result = await generateText({
         model,
-        prompt: `Eres ${env.BOT_NAME}, respondiendo chats de ${env.BUSINESS_NAME} en primera persona: humano, breve, español mexicano casual, sin emojis, nunca pushy.
+        prompt: `You are ${env.BOT_NAME}, replying to chats for ${env.BUSINESS_NAME} in first person: human, brief, casual English, no emojis, never pushy.
 
-Este cliente mostró interés y luego dejó de responder. ${REASON_HINT[cand.reason]}
-${cand.display_name ? `Se llama ${cand.display_name}.` : ""}
+This customer showed interest and then stopped replying. ${REASON_HINT[cand.reason]}
+${cand.display_name ? `Their name is ${cand.display_name}.` : ""}
 
-Últimos mensajes:
+Latest messages:
 ${transcript}
 
-Escribe UN solo mensaje de seguimiento MUY breve (máximo 2 líneas): retoma con naturalidad lo último que hablaron y pregúntale si necesita ayuda o le quedó alguna duda. NO repitas links que ya le mandaste salvo que sea natural. Responde SOLO con el mensaje, sin comillas ni explicación.`,
+Write ONE very brief follow-up message (maximum two lines): naturally continue from the last topic and ask whether the customer needs help or has a question. Do not repeat links already sent unless natural. Return ONLY the message, without quotes or explanation.`,
       });
 
       const text = result.text.trim();

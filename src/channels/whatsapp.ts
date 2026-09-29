@@ -179,7 +179,7 @@ export const whatsappAdapter: ChannelAdapter = {
     const body = (await request.json()) as WaWebhookBody;
     const origin = new URL(request.url).origin;
     const [first] = await parseWhatsAppEvents(body, env, origin);
-    if (!first) throw new Error("whatsapp webhook sin mensaje procesable");
+    if (!first) throw new Error("whatsapp webhook without a processable message");
     return first;
   },
 

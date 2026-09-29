@@ -12,7 +12,10 @@ import { DAILY_CRON, isNightlyTick } from "./crons/schedule";
 import { reindexKb } from "./kb/reindex";
 import { analyzeConversations } from "./insights/analyzer";
 import { Db } from "./db/client";
+import { MessagesRepo } from "./db/messages";
+import { ConversationsRepo } from "./db/conversations";
 import { SettingsRepo, SETTING_KEYS } from "./db/settings";
+import { resolveAgentConfig } from "./settings-loader";
 import { detectKind } from "./learn/fieldPath";
 import { saveCapture, isLearnMode } from "./learn/mapping";
 import { tokensMatch, manychatWebhookAllowed } from "./http-auth";
@@ -23,7 +26,188 @@ export { SupportAgent } from "./agent";
 
 const app = new Hono<{ Bindings: Env }>();
 
+async function getWebChatStatus(env: Env, sessionId: string) {
+  const db = new Db(env.DB);
+  const [config, conversation] = await Promise.all([
+    resolveAgentConfig(env, []),
+    new ConversationsRepo(db).getById(`web:${sessionId}`),
+  ]);
+  const conversationPaused = Boolean(
+    conversation?.paused_until && conversation.paused_until > Date.now(),
+  );
+  const botPaused = config.botPaused;
+  const botOnline = !botPaused && !conversationPaused;
+  return {
+    botOnline,
+    mode: botOnline ? "bot" : "human",
+    botPaused,
+    conversationPaused,
+  } as const;
+}
+
 app.get("/health", (c) => c.text("ok", 200));
+
+// First-party website chat. The portfolio calls this through its own
+// server-side /api/chat route, so WEBCHAT_TOKEN never reaches the browser.
+app.post("/webchat", async (c) => {
+  const expected = c.env.WEBCHAT_TOKEN ?? "";
+  const authorization = c.req.header("Authorization") ?? "";
+  if (!expected || authorization !== `Bearer ${expected}`) {
+    return c.json({ ok: false, error: "unauthorized" }, 401);
+  }
+
+  let body: unknown;
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ ok: false, error: "invalid json" }, 400);
+  }
+
+  const input = body as { sessionId?: unknown; message?: unknown; displayName?: unknown };
+  const sessionId = typeof input.sessionId === "string" ? input.sessionId.trim() : "";
+  const message = typeof input.message === "string" ? input.message.trim() : "";
+  const displayName = typeof input.displayName === "string"
+    ? input.displayName.trim().replace(/\s+/g, " ").slice(0, 120)
+    : "";
+
+  if (
+    !/^[a-zA-Z0-9._:-]{8,128}$/.test(sessionId) ||
+    !message ||
+    message.length > 4000 ||
+    displayName.length < 2
+  ) {
+    return c.json({ ok: false, error: "invalid request" }, 400);
+  }
+
+  try {
+    const result = await getAgentStub(c.env, `web:${sessionId}`).chat({
+      channelUserId: sessionId,
+      text: message,
+      displayName,
+    });
+    return c.json({ ok: true, ...result }, 200);
+  } catch (e) {
+    console.error("webchat error:", e);
+    return c.json({ ok: false, error: "chat unavailable" }, 500);
+  }
+});
+
+// Effective website-chat mode. It combines the global dashboard toggle with
+// the conversation takeover toggle shown in the inbox.
+app.get("/webchat/status", async (c) => {
+  const expected = c.env.WEBCHAT_TOKEN ?? "";
+  const authorization = c.req.header("Authorization") ?? "";
+  if (!expected || authorization !== `Bearer ${expected}`) {
+    return c.json({ ok: false, error: "unauthorized" }, 401);
+  }
+
+  const sessionId = c.req.query("sessionId")?.trim() ?? "";
+  if (!/^[a-zA-Z0-9._:-]{8,128}$/.test(sessionId)) {
+    return c.json({ ok: false, error: "invalid request" }, 400);
+  }
+
+  return c.json({ ok: true, ...(await getWebChatStatus(c.env, sessionId)) }, 200);
+});
+
+// Server-side website identity. The first name assigned to a session is
+// authoritative; later requests cannot overwrite it.
+app.get("/webchat/identity", async (c) => {
+  const expected = c.env.WEBCHAT_TOKEN ?? "";
+  const authorization = c.req.header("Authorization") ?? "";
+  if (!expected || authorization !== `Bearer ${expected}`) {
+    return c.json({ ok: false, error: "unauthorized" }, 401);
+  }
+
+  const sessionId = c.req.query("sessionId")?.trim() ?? "";
+  if (!/^[a-zA-Z0-9._:-]{8,128}$/.test(sessionId)) {
+    return c.json({ ok: false, error: "invalid request" }, 400);
+  }
+
+  const conversation = await new ConversationsRepo(new Db(c.env.DB)).getById(`web:${sessionId}`);
+  return c.json({ ok: true, displayName: conversation?.display_name ?? null }, 200);
+});
+
+app.post("/webchat/identity", async (c) => {
+  const expected = c.env.WEBCHAT_TOKEN ?? "";
+  const authorization = c.req.header("Authorization") ?? "";
+  if (!expected || authorization !== `Bearer ${expected}`) {
+    return c.json({ ok: false, error: "unauthorized" }, 401);
+  }
+
+  let body: unknown;
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ ok: false, error: "invalid json" }, 400);
+  }
+
+  const input = body as { sessionId?: unknown; displayName?: unknown };
+  const sessionId = typeof input.sessionId === "string" ? input.sessionId.trim() : "";
+  const displayName = typeof input.displayName === "string"
+    ? input.displayName.trim().replace(/\s+/g, " ").slice(0, 120)
+    : "";
+  if (!/^[a-zA-Z0-9._:-]{8,128}$/.test(sessionId) || displayName.length < 2) {
+    return c.json({ ok: false, error: "invalid request" }, 400);
+  }
+
+  const conversation = await new ConversationsRepo(new Db(c.env.DB)).getOrCreate(
+    "web",
+    sessionId,
+    displayName,
+  );
+  return c.json({ ok: true, displayName: conversation.display_name }, 200);
+});
+
+// Public owner replies for the first-party website chat. The browser never
+// calls this route directly: the portfolio's Vercel server route forwards the
+// request with WEBCHAT_TOKEN, keeping the Worker secret server-side.
+app.get("/webchat/messages", async (c) => {
+  const expected = c.env.WEBCHAT_TOKEN ?? "";
+  const authorization = c.req.header("Authorization") ?? "";
+  if (!expected || authorization !== `Bearer ${expected}`) {
+    return c.json({ ok: false, error: "unauthorized" }, 401);
+  }
+
+  const sessionId = c.req.query("sessionId")?.trim() ?? "";
+  const afterRaw = c.req.query("after")?.trim() ?? "0";
+  const after = Number(afterRaw);
+  if (!/^[a-zA-Z0-9._:-]{8,128}$/.test(sessionId) || !Number.isFinite(after) || after < 0) {
+    return c.json({ ok: false, error: "invalid request" }, 400);
+  }
+
+  const messages = await new MessagesRepo(new Db(c.env.DB)).publicOwnerMessagesSince(
+    `web:${sessionId}`,
+    after,
+  );
+  return c.json({ ok: true, messages }, 200);
+});
+
+// Public conversation history for the first-party website. Internal owner
+// handoff summaries and tool messages are intentionally excluded.
+app.get("/webchat/history", async (c) => {
+  const expected = c.env.WEBCHAT_TOKEN ?? "";
+  const authorization = c.req.header("Authorization") ?? "";
+  if (!expected || authorization !== `Bearer ${expected}`) {
+    return c.json({ ok: false, error: "unauthorized" }, 401);
+  }
+
+  const sessionId = c.req.query("sessionId")?.trim() ?? "";
+  if (!/^[a-zA-Z0-9._:-]{8,128}$/.test(sessionId)) {
+    return c.json({ ok: false, error: "invalid request" }, 400);
+  }
+
+  const db = new Db(c.env.DB);
+  const status = await getWebChatStatus(c.env, sessionId);
+  const messages = await new MessagesRepo(db).publicHistory(`web:${sessionId}`);
+  return c.json(
+    {
+      ok: true,
+      ...status,
+      messages,
+    },
+    200,
+  );
+});
 
 // Parse the provider payload via the channel adapter, derive the per-user DO id
 // (channel + ':' + channelUserId), and forward the normalized message to the
@@ -232,7 +416,7 @@ app.post("/kb/reindex", async (c) => {
     // y nadie más. Sin esto, un secret que no propagó y un token mal copiado se
     // ven idénticos desde afuera.
     console.warn(
-      "kb/reindex: KB_REINDEX_TOKEN no está configurado en este Worker (o todavía no propagó); toda llamada va a devolver unauthorized",
+      "kb/reindex: KB_REINDEX_TOKEN is not configured in this Worker (or has not propagated yet); every call will return unauthorized",
     );
     return c.json({ ok: false, error: "unauthorized" }, 401);
   }

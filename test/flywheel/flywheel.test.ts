@@ -219,9 +219,9 @@ describe("Mejoras routes", () => {
     const res = await adminApp.request("/mejoras", { headers: AUTH }, env);
     expect(res.status).toBe(200);
     const html = await res.text();
-    expect(html).toContain("Mejoras sugeridas");
+    expect(html).toContain("Suggested improvements");
     expect(html).toContain("Nunca prometas tiempos exactos.");
-    expect(html).toContain("Aplicar");
+    expect(html).toContain("Apply");
   });
 
   it("apply route applies and redirects", async () => {

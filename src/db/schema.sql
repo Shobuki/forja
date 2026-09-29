@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS messages (
   conversation_id TEXT NOT NULL,
   role TEXT NOT NULL,
   content TEXT NOT NULL,
+  owner_visible INTEGER NOT NULL DEFAULT 0,
   tool_calls TEXT,
   model_used TEXT,
   input_tokens INTEGER,

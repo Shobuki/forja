@@ -53,7 +53,7 @@ function channelStatuses(env: Env): ChannelStatus[] {
       id: "telegram",
       name: "Telegram",
       icon: "send",
-      desc: "Bot de Telegram — gratis y el más rápido de conectar.",
+      desc: "Telegram bot — free and the fastest to connect.",
       ok: telegramMissing.length === 0,
       missing: telegramMissing,
       webhookPath: "/webhooks/telegram",
@@ -63,26 +63,26 @@ function channelStatuses(env: Env): ChannelStatus[] {
       id: "whatsapp",
       name: "WhatsApp (Twilio)",
       icon: "phone",
-      desc: "WhatsApp Business vía Twilio — el canal que más venden.",
+      desc: "WhatsApp Business through Twilio — a high-converting channel.",
       ok: twilioMissing.length === 0,
       missing: twilioMissing,
       webhookPath: "/webhooks/twilio",
       securityNote:
         twilioMissing.length === 0 && !has(env.TWILIO_HANDOFF_CONTENT_SID)
-          ? "Sin TWILIO_HANDOFF_CONTENT_SID: el aviso de handoff por WhatsApp requiere una plantilla (HSM) aprobada."
+          ? "Missing TWILIO_HANDOFF_CONTENT_SID: WhatsApp handoff notifications require an approved template (HSM)."
           : undefined,
-      howTo: "En Twilio: número WhatsApp aprobado → apunta el webhook de mensajes entrantes a la URL de abajo.",
+      howTo: "In Twilio: choose an approved WhatsApp number and point the incoming-message webhook to the URL below.",
     },
     {
       id: "whatsapp-cloud",
       name: "WhatsApp (Oficial · Cloud API)",
       icon: "message-circle",
-      desc: "WhatsApp directo con Meta, sin intermediario — mejor margen.",
+      desc: "Direct WhatsApp through Meta, without an intermediary — better margins.",
       ok: whatsappCloudMissing.length === 0,
       missing: whatsappCloudMissing,
       webhookPath: "/webhooks/whatsapp",
       howTo:
-        "App de Meta → WhatsApp → Configuration: apunta el webhook a la URL de abajo, suscribe el campo messages, y guarda tu Phone Number ID y token. Pruébalo con el número de prueba gratis.",
+        "Meta app → WhatsApp → Configuration: point the webhook to the URL below, subscribe to the messages field, and save your Phone Number ID and token. Test with the free test number.",
     },
     {
       id: "meta",
@@ -92,13 +92,13 @@ function channelStatuses(env: Env): ChannelStatus[] {
       ok: metaMissing.length === 0,
       missing: metaMissing,
       webhookPath: "/webhooks/meta",
-      howTo: "App de Meta → Webhooks → suscribe messages con tu VERIFY_TOKEN; la firma se valida sola.",
+      howTo: "Meta app → Webhooks → subscribe to messages with your VERIFY_TOKEN; signatures are verified automatically.",
     },
     {
       id: "manychat",
       name: "ManyChat",
       icon: "bot",
-      desc: "Si ya usas ManyChat, el bot puede vivir detrás de tus flujos.",
+      desc: "If you already use ManyChat, the bot can run behind your flows.",
       ok: manychatMissing.length === 0,
       missing: manychatMissing,
       webhookPath: "/webhooks/manychat",
@@ -122,8 +122,8 @@ export function renderConexiones(env: Env): string {
   const cards = channels
     .map((ch) => {
       const badge = ch.ok
-        ? `<span style="font-size:10px;letter-spacing:.14em;color:var(--ok);border:1px solid var(--ok);background:rgba(127,183,126,.08);padding:3px 10px;font-weight:700">● CONECTADO</span>`
-        : `<span style="font-size:10px;letter-spacing:.14em;color:var(--dim);border:1px solid var(--line);padding:3px 10px;font-weight:600">○ SIN CONECTAR</span>`;
+        ? `<span style="font-size:10px;letter-spacing:.14em;color:var(--ok);border:1px solid var(--ok);background:rgba(127,183,126,.08);padding:3px 10px;font-weight:700">● CONNECTED</span>`
+        : `<span style="font-size:10px;letter-spacing:.14em;color:var(--dim);border:1px solid var(--line);padding:3px 10px;font-weight:600">○ NOT CONNECTED</span>`;
 
       const missing = ch.ok
         ? ""
@@ -165,15 +165,15 @@ export function renderConexiones(env: Env): string {
   const body = `
     <div style="display:flex;flex-direction:column;gap:18px">
       <div style="display:flex;flex-direction:column;gap:2px">
-        <h2 class="font-display font-semibold text-[15px] text-cream">Canales conectados: ${connected} de ${channels.length}</h2>
-        <p class="text-muted text-[12.5px]">Conecta los canales donde están tus clientes. Cuando un canal queda listo, su tarjeta se pone verde. Los secrets se configuran con <span class="font-mono">wrangler secret put NOMBRE</span> (o pídeselo a Claude Code).</p>
+        <h2 class="font-display font-semibold text-[15px] text-cream">Connected channels: ${connected} of ${channels.length}</h2>
+        <p class="text-muted text-[12.5px]">Connect the channels where your customers are. When a channel is ready, its card turns green. Configure secrets with <span class="font-mono">wrangler secret put NAME</span> (or ask Claude Code).</p>
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px">
         ${cards}
       </div>
     </div>`;
 
-  return layout({ title: "Conexiones", activeTab: "conexiones", body, env });
+  return layout({ title: "Connections", activeTab: "conexiones", body, env });
 }
 
 /** Resumen corto para el badge de salud del Resumen. */

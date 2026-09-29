@@ -152,7 +152,7 @@ describe("runFollowups — envío y garantías", () => {
     // El prompt llevó contexto real y la razón
     const prompt = (generateTextMock.mock.calls[0][0] as { prompt: string }).prompt;
     expect(prompt).toContain("pregunta 1");
-    expect(prompt).toContain("venta o interés abierto");
+    expect(prompt).toContain("open sale or unresolved purchase interest");
   });
 
   it("NUNCA repite: la segunda corrida no le manda a nadie", async () => {

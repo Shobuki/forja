@@ -75,10 +75,10 @@ adminApp.use("*", (c, next) => {
 // de upgrade en vez de la vista real. Los datos Pro nunca se exponen en free.
 const PRO_GATE: Array<[string, string]> = [
   ["/admin/insights", "Insights"],
-  ["/admin/stats", "Estadísticas"],
-  ["/admin/costs", "Costos"],
-  ["/admin/mejoras", "Mejoras"],
-  ["/admin/campanas", "Campañas"],
+  ["/admin/stats", "Statistics"],
+  ["/admin/costs", "Costs"],
+  ["/admin/mejoras", "Improvements"],
+  ["/admin/campanas", "Campaigns"],
 ];
 adminApp.use("*", async (c, next) => {
   if (isPro(c.env)) return next();
@@ -183,7 +183,7 @@ adminApp.get("/handoff/template/status", async (c) => {
   const sid =
     c.env.TWILIO_HANDOFF_CONTENT_SID ||
     (await new SettingsRepo(new Db(c.env.DB)).get(SETTING_KEYS.twilioHandoffContentSid));
-  if (!sid) return c.json({ error: "sin plantilla — corre el setup primero" }, 404);
+  if (!sid) return c.json({ error: "no template — run setup first" }, 404);
   const r = await contentApprovalStatus(c.env, sid);
   return c.json({ sid, ...r });
 });
@@ -265,6 +265,16 @@ adminApp.get("/conversations/thread/:id", async (c) =>
 adminApp.get("/conversations/:id", (c) =>
   c.redirect(`/admin/conversations?c=${encodeURIComponent(c.req.param("id"))}`),
 );
+
+// Destructive cleanup for the public portfolio chat only. The admin middleware
+// above protects this route; other channel conversations are never included.
+adminApp.post("/conversations/clear-web", async (c) => {
+  const result = await new ConversationsRepo(new Db(c.env.DB)).deleteWebsiteChats();
+  console.log(
+    `[admin] cleared website chats: conversations=${result.conversations}, messages=${result.messages}`,
+  );
+  return c.redirect("/admin/conversations");
+});
 
 // Insights tab. Visiting it opportunistically grades a few pending
 // conversations in the background (waitUntil) so the tab catches up on its own
@@ -357,7 +367,7 @@ adminApp.post("/agente/node/:id/save", async (c) => {
 adminApp.post("/agente/tools/:name/toggle", async (c) => {
   const name = c.req.param("name");
   const ok = await toggleTool(c.env, name);
-  if (!ok) return c.text("Tool no encontrada", 404);
+  if (!ok) return c.text("Tool not found", 404);
   c.header("HX-Trigger", "canvas-refresh");
   return c.html((await renderNodeModal(c.env, `tool:${name}`, true)) + toastOob("✓ Guardado"));
 });
@@ -390,14 +400,14 @@ adminApp.post("/campanas/send", async (c) => {
   const templateSid = String(form.get("template_sid") ?? "").trim();
   const varsRaw = String(form.get("template_vars") ?? "").trim();
   if (!segmentId || !campaignKey || (!freeformText && !templateSid)) {
-    return c.redirect("/admin/campanas?err=" + encodeURIComponent("Falta el segmento, el nombre de campaña, o un mensaje/plantilla."));
+    return c.redirect("/admin/campanas?err=" + encodeURIComponent("Segment, campaign name, and message/template are required."));
   }
   let variables: Record<string, string> | undefined;
   if (varsRaw) {
     try {
       variables = JSON.parse(varsRaw);
     } catch {
-      return c.redirect("/admin/campanas?err=" + encodeURIComponent("Las variables no son JSON válido."));
+      return c.redirect("/admin/campanas?err=" + encodeURIComponent("Variables are not valid JSON."));
     }
   }
   // El body de la plantilla viaja al historial de cada conversación — sin él,
@@ -439,7 +449,7 @@ adminApp.get("/config/llm-test", async (c) => {
     const { model, modelId, provider } = createModel(c.env, "fast", ov);
     const r = await generateText({
       model,
-      prompt: "Responde únicamente: ok",
+      prompt: "Reply only: ok",
       maxOutputTokens: 8,
     });
     const okText = r.text.trim().slice(0, 20) || "ok";
@@ -494,7 +504,7 @@ adminApp.post("/config", async (c) => {
     const v = String(provRaw).trim().toLowerCase();
     await repo.set(
       SETTING_KEYS.llmProvider,
-      v === "anthropic" || v === "openai" || v === "xai" ? v : "",
+      v === "anthropic" || v === "openai" || v === "xai" || v === "mimo" ? v : "",
     );
   }
   const modelRaw = form.get(SETTING_KEYS.llmModel);
@@ -566,12 +576,24 @@ adminApp.post("/conversations/:id/reply", async (c) => {
   const id = c.req.param("id");
   const form = await c.req.formData().catch(() => null);
   const text = String(form?.get("text") ?? "").trim();
-  if (!text) return c.html(`<span class="text-stone-400">Escribe un mensaje primero.</span>`);
+  if (!text) return c.html(`<span class="text-stone-400">Write a message first.</span>`);
 
   const db = new Db(c.env.DB);
   const convs = new ConversationsRepo(db);
   const conv = await convs.getById(id);
-  if (!conv) return c.html(`<span class="text-red-600">✗ Conversación no encontrada.</span>`);
+  if (!conv) return c.html(`<span class="text-red-600">✗ Conversation not found.</span>`);
+
+  if (conv.channel === "web") {
+    const msgs = new MessagesRepo(db);
+    await msgs.append(id, "owner", text, { ownerVisible: true });
+    await convs.touchLastMessage(id);
+    await convs.setPausedUntil(id, Date.now() + TAKEOVER_MS);
+    c.header("X-Sent", "1");
+    return c.html(
+      `<span class="text-emerald-600">Sent to website chat</span>` +
+        `<div id="thread-live" hx-swap-oob="innerHTML">${await renderThreadLive(c.env, id)}</div>`,
+    );
+  }
 
   try {
     const adapter = pickAdapter(conv.channel as ChannelId);
@@ -587,7 +609,7 @@ adminApp.post("/conversations/:id/reply", async (c) => {
   } catch (e) {
     // Nothing persisted on failure: the customer never got the message.
     const msg = e instanceof Error ? e.message : String(e);
-    return c.html(`<span class="text-red-600">✗ No se pudo enviar: ${escapeHtml(msg)}</span>`);
+    return c.html(`<span class="text-red-600">✗ Could not send: ${escapeHtml(msg)}</span>`);
   }
 
   const msgs = new MessagesRepo(db);
@@ -597,7 +619,7 @@ adminApp.post("/conversations/:id/reply", async (c) => {
 
   c.header("X-Sent", "1");
   return c.html(
-    `<span class="text-emerald-600">✓ Enviado por ${escapeHtml(channelLabel(conv.channel))}</span>` +
+    `<span class="text-emerald-600">✓ Sent through ${escapeHtml(channelLabel(conv.channel))}</span>` +
       `<div id="thread-live" hx-swap-oob="innerHTML">${await renderThreadLive(c.env, id)}</div>`,
   );
 });
@@ -672,7 +694,7 @@ adminApp.post("/conversations/:id/suggest", async (c) => {
   aiMessages.push({
     role: "user",
     content:
-      "Eres asistente del dueño. Sugiere UN solo mensaje corto en español que el dueño podría enviar al cliente para resolver la última consulta. NO incluyas preámbulo, solo la frase a copy/paste.",
+      "You assist the owner. Suggest ONE short English message the owner could send to resolve the customer's latest question. Do not include a preamble; return only the copy-paste-ready sentence.",
   });
   const sys = systemPromptFromEnv(c.env, [], renderBusinessContext());
   const result = await generateText({
@@ -680,7 +702,7 @@ adminApp.post("/conversations/:id/suggest", async (c) => {
     system: sys,
     messages: aiMessages,
   });
-  // HTMX swaps this into #suggestion-box; the "Usar" button fills the composer.
+  // HTMX swaps this into #suggestion-box; the "Use" button fills the composer.
   return c.html(renderSuggestionBox(result.text));
 });
 
@@ -689,9 +711,9 @@ adminApp.post("/conversations/:id/suggest", async (c) => {
 adminApp.notFound((c) =>
   c.html(
     layout({
-      title: "No encontrado",
+      title: "Not found",
       activeTab: "overview",
-      body: "<p class='text-stone-500'>Página no encontrada.</p>",
+      body: "<p class='text-stone-500'>Page not found.</p>",
     }),
     404,
   ),

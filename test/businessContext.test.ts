@@ -19,14 +19,14 @@ const FIXTURE: BusinessConfig = {
 describe("renderBusinessContext", () => {
   it("renders hours, services with prices, location, payment, phone", () => {
     const ctx = renderBusinessContext(FIXTURE);
-    expect(ctx).toContain("Horarios:");
-    expect(ctx).toContain("Servicios y precios:");
+    expect(ctx).toContain("Hours:");
+    expect(ctx).toContain("Services and prices:");
     expect(ctx).toContain("Corte: $250");
     expect(ctx).toContain("Barba: $200");
     expect(ctx).toContain("Corte + Barba: $400");
-    expect(ctx).toContain("Ubicación:");
-    expect(ctx).toContain("Métodos de pago:");
-    expect(ctx).toContain("Teléfono:");
+    expect(ctx).toContain("Location:");
+    expect(ctx).toContain("Payment methods:");
+    expect(ctx).toContain("Phone:");
   });
 
   it("joins payment methods with comma", () => {

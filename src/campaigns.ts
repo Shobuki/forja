@@ -155,7 +155,7 @@ export async function sendCampaign(
         await msgs.append(
           m.conversationId,
           "assistant",
-          rendered ?? `[plantilla ${opts.template!.sid} enviada]`,
+          rendered ?? `[template ${opts.template!.sid} sent]`,
         );
         result.sentTemplate++;
         spent++;
@@ -253,22 +253,22 @@ export async function createHandoffTemplate(
 ): Promise<{ sid: string; approval: string; name: string; body: string } | { error: string }> {
   const acct = env.TWILIO_ACCOUNT_SID;
   const tok = env.TWILIO_AUTH_TOKEN;
-  if (!acct || !tok) return { error: "Twilio no configurado (SID/token)" };
+  if (!acct || !tok) return { error: "Twilio is not configured (SID/token)" };
   const auth = `Basic ${btoa(`${acct}:${tok}`)}`;
 
   // OJO Meta: la plantilla NO puede empezar ni terminar con una variable
   // (rechazo subCode 2388299) — por eso la línea de cierre estática.
   const body =
-    "🔔 Tu bot te necesita con un cliente.\n\nMotivo: {{1}}\n\nResumen: {{2}}\n\nAtiende la conversación aquí: {{3}}\n\n— Aviso automático de tu bot.";
+    "🔔 Your bot needs you with a customer.\n\nReason: {{1}}\n\nSummary: {{2}}\n\nHandle the conversation here: {{3}}\n\n— Automatic bot notification.";
   const createRes = await fetch("https://content.twilio.com/v1/Content", {
     method: "POST",
     headers: { Authorization: auth, "Content-Type": "application/json" },
     body: JSON.stringify({
       friendly_name: HANDOFF_TEMPLATE_NAME,
-      language: "es_MX",
+      language: "en_US",
       variables: {
-        "1": "el cliente pidió hablar con una persona",
-        "2": "María pagó y no recibió su acceso",
+        "1": "the customer asked to speak with a person",
+        "2": "Maria paid and did not receive access",
         "3": "https://example.com/admin/conversations",
       },
       types: { "twilio/text": { body } },
@@ -300,7 +300,7 @@ export async function contentApprovalStatus(
 ): Promise<{ status: string; rejectionReason?: string } | { error: string }> {
   const acct = env.TWILIO_ACCOUNT_SID;
   const tok = env.TWILIO_AUTH_TOKEN;
-  if (!acct || !tok) return { error: "Twilio no configurado (SID/token)" };
+  if (!acct || !tok) return { error: "Twilio is not configured (SID/token)" };
   const res = await fetch(`https://content.twilio.com/v1/Content/${sid}/ApprovalRequests`, {
     headers: { Authorization: `Basic ${btoa(`${acct}:${tok}`)}` },
   });

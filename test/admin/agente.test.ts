@@ -48,10 +48,10 @@ describe("Mi Agente — page and canvas", () => {
     const res = await adminApp.request("/agente", { headers: AUTH }, env);
     expect(res.status).toBe(200);
     const html = await res.text();
-    expect(html).toContain("Mi Agente");
+    expect(html).toContain("My Agent");
     expect(html).toContain("Buffer");
-    expect(html).toContain("Respuesta");
-    expect(html).toContain("Modelo");
+    expect(html).toContain("Reply");
+    expect(html).toContain("Model");
     expect(html).toContain("Memoria");
     // Pro tier: all six tools appear as nodes
     for (const tool of ["searchKb", "handoffHuman", "pauseBot", "captureLead", "scheduleAppointment", "catalogQuery"]) {
@@ -81,7 +81,7 @@ describe("Mi Agente — node panels", () => {
     const res = await adminApp.request("/agente/node/brain", { headers: AUTH }, env);
     expect(res.status).toBe(200);
     const html = await res.text();
-    expect(html).toContain("prompt efectivo");
+    expect(html).toContain("effective prompt");
     // The rendered prompt itself is embedded (escaped) — role tag included:
     expect(html).toContain("&lt;role&gt;");
     expect(html).toContain("TestBot");
@@ -92,7 +92,7 @@ describe("Mi Agente — node panels", () => {
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toContain("Capturar lead");
-    expect(html).toContain("Apagar tool");
+    expect(html).toContain("Disable tool");
   });
 });
 
@@ -106,7 +106,7 @@ describe("Mi Agente — tool toggle", () => {
     );
     expect(res.status).toBe(200);
     expect(await settings.get(SETTING_KEYS.disabledTools)).toBe("catalogQuery");
-    expect(await res.text()).toContain("Encender tool");
+    expect(await res.text()).toContain("Enable tool");
 
     // Toggle back on
     res = await adminApp.request(

@@ -17,6 +17,15 @@ import { CustomerFactsRepo } from "./db/facts";
 import { createModel } from "./llm/provider";
 import { formatLlmError } from "./llm/errorDetail";
 import { runLlmTurn } from "./llm/runTurn";
+import { detectReplyLanguage, replyLanguageInstruction } from "./language";
+import {
+  isBadWebsiteAssistantReply,
+  portfolioFallbackReply,
+} from "./webchat";
+import {
+  DEFAULT_WORKERS_AI_MODEL,
+  runWorkersAiTurn,
+} from "./llm/workersAi";
 import { costOfUsage } from "./pricing";
 import type { ChannelId } from "./channels/shared";
 import { maskTelegramToken, unmaskTelegramToken } from "./telegramFiles";
@@ -43,6 +52,12 @@ export interface AgentIncomingPayload {
   isOwnerMessage?: boolean;
 }
 
+export interface WebChatPayload {
+  channelUserId: string;
+  text: string;
+  displayName?: string;
+}
+
 export class SupportAgent extends Agent<Env, SupportAgentState> {
   initialState: SupportAgentState = {
     conversationId: null,
@@ -50,7 +65,7 @@ export class SupportAgent extends Agent<Env, SupportAgentState> {
     channelUserId: "",
     pendingMessages: [],
     lastAlarmAt: 0,
-    lastUserLang: "es",
+    lastUserLang: "en",
     toolCallsInLast2Turns: 0,
     lastSearchKbScore: 1,
     imageRetryCount: 0,
@@ -104,11 +119,13 @@ export class SupportAgent extends Agent<Env, SupportAgentState> {
         if (await isOverDailyCap(db, conv.id)) {
           await convs.setPausedUntil(conv.id, Date.now() + DAILY_CAP_SNOOZE_MS);
           await new MessagesRepo(db).append(conv.id, "assistant", DAILY_CAP_MESSAGE);
-          const channel = payload.channel as ChannelId;
-          await pickAdapter(channel).sendReply(
-            { channel, channelUserId: payload.channelUserId, chunks: [DAILY_CAP_MESSAGE] },
-            this.env,
-          );
+          if (payload.channel !== "web") {
+            const channel = payload.channel as ChannelId;
+            await pickAdapter(channel).sendReply(
+              { channel, channelUserId: payload.channelUserId, chunks: [DAILY_CAP_MESSAGE] },
+              this.env,
+            );
+          }
           console.warn(`[spam-guard] conv ${conv.id} tope diario de turnos → descanso 12h`);
           return { acknowledged: true };
         }
@@ -126,10 +143,10 @@ export class SupportAgent extends Agent<Env, SupportAgentState> {
       try {
         const { transcribeAudio } = await import("./media/transcribe");
         const result = await transcribeAudio(payload.audioUrl, this.env);
-        processedText = result.text || "(audio sin transcripción)";
+        processedText = result.text || "(audio without transcription)";
       } catch (e) {
         console.error("[ingest] transcription failed:", e);
-        processedText = "(no pude entender el audio)";
+        processedText = "(I could not understand the audio)";
       }
     }
 
@@ -139,10 +156,10 @@ export class SupportAgent extends Agent<Env, SupportAgentState> {
       if (!isPro(this.env)) {
         processedText =
           (processedText || "") +
-          "\n(El cliente mandó una imagen, pero tu plan no soporta análisis de imágenes.)";
+          "\n(The customer sent an image, but this plan does not support image analysis.)";
       } else {
         processedText =
-          (processedText || "(imagen sin caption)") +
+          (processedText || "(image without caption)") +
           // MASKED: a Telegram file URL carries the bot token inside, and this
           // marker gets persisted in D1 (and shown in the dashboard, and
           // included in exports). See src/telegramFiles.ts.
@@ -168,6 +185,13 @@ export class SupportAgent extends Agent<Env, SupportAgentState> {
     // Owner paused the bot via the dashboard → keep the message buffered but
     // stay silent: do NOT arm the alarm, so alarm() never runs.
     if (cfg.botPaused) {
+      return { acknowledged: true };
+    }
+
+    // Web chat requests are completed synchronously by chat() below. They must
+    // not also arm a delayed alarm, otherwise the same message could be run
+    // twice after the HTTP response has already been sent.
+    if (payload.channel === "web") {
       return { acknowledged: true };
     }
 
@@ -202,6 +226,39 @@ export class SupportAgent extends Agent<Env, SupportAgentState> {
     this.setState({ ...this.state, lastAlarmAt: alarmAt });
 
     return { acknowledged: true };
+  }
+
+  /**
+   * Synchronous entrypoint for a first-party website chat widget. The normal
+   * webhook channels call ingest() and answer later through their provider;
+   * web chat needs the generated text in the HTTP response instead.
+   */
+  async chat(payload: WebChatPayload): Promise<{ text: string; conversationId: string; paused?: boolean }> {
+    const db = new Db(this.env.DB);
+    const convs = new ConversationsRepo(db);
+    const existing = await convs.getOrCreate("web", payload.channelUserId, payload.displayName);
+    const cfg = await resolveAgentConfig(this.env, []);
+    if (cfg.botPaused || (await convs.isPaused(existing.id))) {
+      await new MessagesRepo(db).append(existing.id, "user", payload.text);
+      await convs.touchLastMessage(existing.id);
+      return {
+        text: "",
+        conversationId: existing.id,
+        paused: true,
+      };
+    }
+
+    await this.ingest({
+      channel: "web",
+      channelUserId: payload.channelUserId,
+      displayName: payload.displayName,
+      text: payload.text,
+    });
+    await this.processBuffer();
+
+    const latest = await new MessagesRepo(db).lastN(existing.id, 1);
+    const reply = latest.find((message) => message.role === "assistant")?.content ?? "";
+    return { text: reply, conversationId: existing.id };
   }
 
   /**
@@ -276,6 +333,97 @@ export class SupportAgent extends Agent<Env, SupportAgentState> {
     const enabledTools = Object.fromEntries(
       Object.entries(tools).filter(([name]) => cfg.enabledToolNames.includes(name)),
     );
+    const replyLanguage = detectReplyLanguage(combined);
+
+    // The public portfolio chat can use the native Workers AI binding. It is
+    // deliberately a simple text-only path: Llama 3.2 1B is inexpensive and
+    // reliable for FAQ-style portfolio replies, but is not used for tool
+    // calling or the external channel adapters.
+    const useWorkersAiWebChat =
+      this.state.channel === "web" &&
+      (this.env.WEBCHAT_LLM_PROVIDER === "workers-ai" ||
+        cfg.llm.provider === "workers-ai");
+    if (useWorkersAiWebChat) {
+      const modelId =
+        this.env.WORKERS_AI_MODEL_FAST?.trim() || DEFAULT_WORKERS_AI_MODEL;
+      const allWorkerMessages = aiMessages
+        .filter(
+          (message) =>
+            message.role === "user" || message.role === "assistant",
+        )
+        .map((message) => ({
+          role: message.role as "user" | "assistant",
+          content:
+            typeof message.content === "string"
+              ? message.content
+              : JSON.stringify(message.content),
+        }));
+      // A small model strongly imitates the previous assistant turn. Keep
+      // only same-language history, plus the current message, so switching
+      // from Indonesian to English (or back) works reliably.
+      const workerMessages = allWorkerMessages.filter(
+        (message, index) =>
+          (index === allWorkerMessages.length - 1 ||
+            detectReplyLanguage(message.content) === replyLanguage) &&
+          !(message.role === "assistant" && isBadWebsiteAssistantReply(message.content)),
+      );
+      const webSystem = `${cfg.systemPrompt}
+
+${replyLanguageInstruction(replyLanguage)}
+
+<public_portfolio_chat>
+This is a normal public portfolio conversation. Questions about Alfredo's projects,
+work experience, skills, education, website, and contact details are allowed.
+Answer those questions directly from the portfolio context. Never refuse a normal
+portfolio question and never use a generic safety refusal such as "I cannot help"
+or "I am unable to assist". Do not mention tools, internal systems, providers,
+or model limitations. If a detail is not in the context, say that you do not have
+that detail and suggest the Contact section.
+Keep the reply concise and natural. A greeting should receive a friendly greeting.
+</public_portfolio_chat>`;
+
+      let assistantText = "";
+      let inputTokens = 0;
+      let outputTokens = 0;
+      let workersAiError: unknown;
+      for (let attempt = 0; attempt < 2 && !assistantText; attempt += 1) {
+        try {
+          const turn = await runWorkersAiTurn({
+            env: this.env,
+            modelId,
+            system: webSystem,
+            messages: workerMessages,
+            temperature: cfg.temperature,
+          });
+          assistantText = turn.text;
+          inputTokens = turn.inputTokens;
+          outputTokens = turn.outputTokens;
+        } catch (e) {
+          workersAiError = e;
+          if (attempt === 0) await new Promise((resolve) => setTimeout(resolve, 350));
+        }
+      }
+      if (!assistantText) {
+        console.error("[SupportAgent] Workers AI web chat failed after retry:", workersAiError);
+        assistantText =
+          "Sorry, the chat is temporarily unavailable. Please use the Contact section below.";
+      } else if (isBadWebsiteAssistantReply(assistantText)) {
+        console.warn("[SupportAgent] Replaced generic Workers AI refusal in website chat");
+        assistantText = portfolioFallbackReply(combined, replyLanguage);
+      }
+
+      await msgs.append(convId, "assistant", assistantText, {
+        modelUsed: modelId,
+        inputTokens,
+        outputTokens,
+      });
+      await convs.touchLastMessage(convId);
+      this.setState({
+        ...this.state,
+        toolCallsInLast2Turns: 0,
+      });
+      return;
+    }
 
     // Select tier: honor an explicit override, otherwise auto-select. The active
     // provider (Anthropic default | OpenAI) maps the tier to a concrete model id.
@@ -306,7 +454,7 @@ export class SupportAgent extends Agent<Env, SupportAgentState> {
       tier = guard.tier;
     }
 
-    const { model, modelId, supportsPromptCache } = createModel(this.env, tier, cfg.llm);
+    const { model, modelId, provider, supportsPromptCache } = createModel(this.env, tier, cfg.llm);
 
     // Cache the (large, stable) system prompt with an ephemeral cache breakpoint.
     // Only the system block is cached — messages change every turn. Cache hits
@@ -332,14 +480,21 @@ export class SupportAgent extends Agent<Env, SupportAgentState> {
       if (facts.length > 0) {
         system.push({
           role: "system",
-          content: `<cliente>\nLo que ya sabes de este cliente (de conversaciones pasadas):\n${facts
+          content: `<customer_memory>\nWhat you already know about this customer from past conversations:\n${facts
             .map((f) => `- ${f.fact}`)
-            .join("\n")}\n</cliente>`,
+            .join("\n")}\n</customer_memory>`,
         });
       }
     } catch (e) {
       console.warn("[SupportAgent] customer facts lookup failed:", e);
     }
+
+    // This instruction is intentionally the last system block so the reply
+    // follows the visitor's current language even when older context differs.
+    system.push({
+      role: "system",
+      content: replyLanguageInstruction(replyLanguage),
+    });
 
     let assistantText = "";
     let inputTokens = 0;
@@ -350,9 +505,10 @@ export class SupportAgent extends Agent<Env, SupportAgentState> {
     let usedModelId = modelId;
 
     // Corre el loop del LLM con un modelo dado; deja los resultados en las vars.
-    const attempt = async (m: any) => {
+    const attempt = async (m: any, providerForAttempt: string = provider) => {
       const turn = await runLlmTurn({
         model: m,
+        provider: providerForAttempt,
         system,
         messages: aiMessages,
         tools: enabledTools,
@@ -370,7 +526,7 @@ export class SupportAgent extends Agent<Env, SupportAgentState> {
     };
 
     try {
-      await attempt(model);
+      await attempt(model, provider);
     } catch (e: any) {
       // FAILOVER con backoff: en ráfagas (historias) el primario suele dar un
       // rate-limit TRANSITORIO — esperar con jitter y reintentar resuelve la
@@ -386,7 +542,7 @@ export class SupportAgent extends Agent<Env, SupportAgentState> {
 
       await backoff(2000 + Math.floor(Math.random() * 1500));
       try {
-        await attempt(model);
+        await attempt(model, primary.provider);
         ok = true;
       } catch (e1: any) {
         console.error("[SupportAgent.processBuffer] primary retry failed:", formatLlmError(e1));
@@ -397,14 +553,14 @@ export class SupportAgent extends Agent<Env, SupportAgentState> {
           `[SupportAgent] failover ${primary.provider} → ${fb.provider}/${fb.modelId}`,
         );
         try {
-          await attempt(fb.model);
+          await attempt(fb.model, fb.provider);
           usedModelId = fb.modelId;
           ok = true;
         } catch (e2: any) {
           console.error("[SupportAgent.processBuffer] fallback failed:", formatLlmError(e2));
           await backoff(2500 + Math.floor(Math.random() * 1500));
           try {
-            await attempt(fb.model);
+            await attempt(fb.model, fb.provider);
             usedModelId = fb.modelId;
             ok = true;
           } catch (e3: any) {
@@ -414,7 +570,7 @@ export class SupportAgent extends Agent<Env, SupportAgentState> {
       }
 
       if (!ok) {
-        assistantText = "Algo falló de mi lado, intenta de nuevo en un momento.";
+        assistantText = "Something went wrong on my side. Please try again in a moment.";
       }
     }
 
@@ -436,16 +592,18 @@ export class SupportAgent extends Agent<Env, SupportAgentState> {
     // Chunk + send via the channel adapter
     const chunks = chunkReply(assistantText, cfg.maxChunks);
     const channel = this.state.channel as ChannelId;
-    const adapter = pickAdapter(channel);
-    await adapter.sendReply(
-      {
-        channel,
-        channelUserId: this.state.channelUserId,
-        chunks,
-        interChunkDelayMs: cfg.interChunkDelayMs,
-      },
-      this.env,
-    );
+    if (channel !== ("web" as ChannelId)) {
+      const adapter = pickAdapter(channel);
+      await adapter.sendReply(
+        {
+          channel,
+          channelUserId: this.state.channelUserId,
+          chunks,
+          interChunkDelayMs: cfg.interChunkDelayMs,
+        },
+        this.env,
+      );
+    }
 
     console.log(
       `[SupportAgent.processBuffer] sent ${chunks.length} chunks, model=${usedModelId}, cost=$${costOfUsage(

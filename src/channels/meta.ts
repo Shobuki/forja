@@ -126,7 +126,7 @@ export const metaAdapter: ChannelAdapter = {
   async parseIncoming(request: Request, _env: Env): Promise<IncomingMessage> {
     const body = (await request.json()) as MetaWebhookBody;
     const [first] = parseMetaEvents(body);
-    if (!first) throw new Error("meta webhook sin mensaje procesable");
+    if (!first) throw new Error("meta webhook without a processable message");
     return first;
   },
 

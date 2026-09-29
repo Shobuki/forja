@@ -294,7 +294,7 @@ const DICT = {
     helpAccount: "forjabots.com account:  login (opens the browser) · pair (links your deployed bot) · whoami · logout",
   },
 };
-let L = "es";
+let L = "en";
 const t = () => DICT[L];
 
 // Región del bot: idioma del panel + moneda + zona horaria con la que arranca.
@@ -317,7 +317,7 @@ function normRegion(v) {
   if (s.startsWith("pt") || s === "brasil" || s === "brazil") return "pt-BR";
   return null;
 }
-let REGION = "es-419";
+let REGION = "en";
 
 // Modo no-interactivo: cuando el CLI lo corre un AGENTE (Claude Code/Codex) o CI, no hay
 // terminal interactiva. `interactive()` es false si no hay TTY o si se pasó --yes/FORJA_YES.
@@ -563,7 +563,7 @@ function stampBotConfig(dir, plan, slug) {
   const wt = join(dir, "wrangler.toml");
   if (!existsSync(wt)) return;
   const tier = plan === "free" ? "free" : "pro";
-  const lang = (REGIONS[REGION] || REGIONS["es-419"]).botLang;
+  const lang = (REGIONS[REGION] || REGIONS.en).botLang;
   const niche = NICHE_SLUGS[String(slug || "").toLowerCase()] || "generico";
   let s = readFileSync(wt, "utf8");
   // CRÍTICO: resolver TODO {{BOT_SLUG}} a un slug válido ANTES que nada. wrangler
@@ -910,13 +910,13 @@ const canInstall = (userPlan, bot) => (PLAN_RANK[userPlan] ?? 0) >= rankOf(bot.m
 async function chooseLang(rl, cfg) {
   // Ya elegida (flag o corrida previa): respétala y deriva el idioma de la CLI.
   if (cfg.region && REGIONS[cfg.region]) { REGION = cfg.region; L = REGIONS[REGION].ui; return; }
-  const keys = ["es-419", "es-ES", "en", "pt-BR"];
+  const keys = ["en", "es-419", "es-ES", "pt-BR"];
   const i = await select(
     rl,
-    DICT.es.chooseLang,
+    DICT.en.chooseLang,
     keys.map((k) => ({ label: REGIONS[k].label, desc: `${REGIONS[k].currency} · ${REGIONS[k].botLang}` })),
   );
-  REGION = keys[i] ?? "es-419";
+  REGION = keys[i] ?? "en";
   L = REGIONS[REGION].ui;
   cfg.region = REGION; cfg.lang = L; saveCfg(cfg);
   console.log("");
@@ -974,7 +974,7 @@ const ONB = {
   es: {
     prep: "Vamos a preparar tu bot · unas preguntas rápidas (enter = saltar)",
     brainQ: "¿Con qué cerebro (modelo de IA) quieres que piense tu bot?",
-    brains: "1. Claude (recomendado)   2. ChatGPT (OpenAI)   3. Grok (xAI)",
+    brains: "1. Claude (recomendado)   2. ChatGPT (OpenAI)   3. Grok (xAI)   4. MiMo (Xiaomi)",
     qName: "¿Cómo se llama tu negocio?",
     qWhat: "En una frase, ¿a qué se dedica?",
     qOffer: "¿Qué ofreces? (tus servicios o productos principales, con precios si quieres)",
@@ -997,7 +997,7 @@ const ONB = {
   en: {
     prep: "Let's set up your bot · a few quick questions (enter = skip)",
     brainQ: "Which brain (AI model) should your bot think with?",
-    brains: "1. Claude (recommended)   2. ChatGPT (OpenAI)   3. Grok (xAI)",
+    brains: "1. Claude (recommended)   2. ChatGPT (OpenAI)   3. Grok (xAI)   4. MiMo (Xiaomi)",
     qName: "What's your business called?",
     qWhat: "In one line, what does it do?",
     qOffer: "What do you offer? (main services or products, with prices if you like)",
@@ -1025,16 +1025,18 @@ const BRAINS = {
   "1": { provider: "anthropic", secret: "ANTHROPIC_API_KEY" },
   "2": { provider: "openai", secret: "OPENAI_API_KEY" },
   "3": { provider: "xai", secret: "XAI_API_KEY" },
+  "4": { provider: "mimo", secret: "MIMO_API_KEY" },
 };
 
 async function chooseBrain(rl, flags = {}) {
   // normaliza sinónimos de --cerebro: anthropic→claude, openai→chatgpt, xai→grok
   const raw = String(flags.cerebro || flags.brain || "").trim().toLowerCase();
-  const val = { anthropic: "claude", openai: "chatgpt", gpt: "chatgpt", chatgpt: "chatgpt", xai: "grok", grok: "grok", claude: "claude" }[raw] || raw || null;
+  const val = { anthropic: "claude", openai: "chatgpt", gpt: "chatgpt", chatgpt: "chatgpt", xai: "grok", grok: "grok", claude: "claude", mimo: "mimo", xiaomi: "mimo" }[raw] || raw || null;
   const i = await select(rl, o().brainQ, [
     { key: "claude", label: "Claude", desc: L === "en" ? "recommended" : "recomendado" },
     { key: "chatgpt", label: "ChatGPT", desc: "OpenAI" },
     { key: "grok", label: "Grok", desc: "xAI" },
+    { key: "mimo", label: "MiMo", desc: "Xiaomi" },
   ], { value: val });
   return BRAINS[String(i + 1)] || BRAINS["1"];
 }
@@ -1083,7 +1085,7 @@ async function starterOnboarding(rl, licenseEmail, flags = {}) {
 function renderMemberConfig({ businessName, botName, lang, tier, email, what, offer, hours, location, phone, tone, web, pagos, faq, reglas }) {
   // Idioma/moneda/tz salen de la región elegida en el init. `lang` (parámetro)
   // se conserva por compatibilidad pero la fuente es REGION.
-  const R = REGIONS[REGION] || REGIONS["es-419"];
+  const R = REGIONS[REGION] || REGIONS.en;
   const cf = {};
   if (what) cf.queHacemos = what;
   if (offer) cf.ofrecemos = offer;
@@ -1170,7 +1172,7 @@ function applyBusinessFlags(dir, flags = {}, tier = "pro") {
     flags.ubicacion || flags.telefono || flags.web || flags.redes || flags.pagos ||
     flags.faq || flags.reglas || flags.tono;
   if (!hasBiz) return false;
-  const provider = { claude: "anthropic", anthropic: "anthropic", chatgpt: "openai", openai: "openai", gpt: "openai", grok: "xai", xai: "xai" }[String(flags.cerebro || flags.brain || "").trim().toLowerCase()] || "anthropic";
+  const provider = { claude: "anthropic", anthropic: "anthropic", chatgpt: "openai", openai: "openai", gpt: "openai", grok: "xai", xai: "xai", mimo: "mimo", xiaomi: "mimo" }[String(flags.cerebro || flags.brain || "").trim().toLowerCase()] || "anthropic";
   const tone = { cercano: "cercano", friendly: "cercano", formal: "formal", divertido: "divertido", playful: "divertido" }[String(flags.tono || "").trim().toLowerCase()] || "";
   const botName = businessName ? (L === "en" ? `${businessName} Assistant` : `Asistente de ${businessName}`) : "Asistente";
   if (existsSync(join(dir, "member"))) {

@@ -31,34 +31,34 @@ interface Section {
 // depend on them) — do not rename them. Icons are lucide names.
 const NAV: Section[] = [
   {
-    label: "Inicio",
-    items: [{ id: "overview", label: "Resumen", href: "/admin/overview", icon: "layout-dashboard" }],
+    label: "Home",
+    items: [{ id: "overview", label: "Overview", href: "/admin/overview", icon: "layout-dashboard" }],
   },
   {
-    label: "Bandeja",
+    label: "Inbox",
     items: [
-      { id: "conversations", label: "Conversaciones", href: "/admin/conversations", icon: "messages-square" },
+      { id: "conversations", label: "Conversations", href: "/admin/conversations", icon: "messages-square" },
       { id: "leads", label: "Leads", href: "/admin/leads", icon: "user-plus" },
       { id: "tickets", label: "Tickets", href: "/admin/tickets", icon: "life-buoy" },
-      { id: "campanas", label: "Campañas", href: "/admin/campanas", icon: "megaphone" },
+      { id: "campanas", label: "Campaigns", href: "/admin/campanas", icon: "megaphone" },
     ],
   },
   {
-    label: "Mi Agente",
+    label: "My Agent",
     items: [
-      { id: "agente", label: "Flujo", href: "/admin/agente", icon: "workflow" },
-      { id: "kb", label: "Conocimiento", href: "/admin/kb", icon: "book-open" },
-      { id: "mejoras", label: "Mejoras", href: "/admin/mejoras", icon: "sparkles" },
-      { id: "conexiones", label: "Conexiones", href: "/admin/conexiones", icon: "plug-zap" },
-      { id: "config", label: "Configuración", href: "/admin/config", icon: "sliders-horizontal" },
+      { id: "agente", label: "Flow", href: "/admin/agente", icon: "workflow" },
+      { id: "kb", label: "Knowledge", href: "/admin/kb", icon: "book-open" },
+      { id: "mejoras", label: "Improvements", href: "/admin/mejoras", icon: "sparkles" },
+      { id: "conexiones", label: "Connections", href: "/admin/conexiones", icon: "plug-zap" },
+      { id: "config", label: "Settings", href: "/admin/config", icon: "sliders-horizontal" },
     ],
   },
   {
-    label: "Análisis",
+    label: "Analytics",
     items: [
       { id: "insights", label: "Insights", href: "/admin/insights", icon: "scan-eye" },
-      { id: "stats", label: "Estadísticas", href: "/admin/stats", icon: "bar-chart-3" },
-      { id: "costs", label: "Costos", href: "/admin/costs", icon: "receipt" },
+      { id: "stats", label: "Statistics", href: "/admin/stats", icon: "bar-chart-3" },
+      { id: "costs", label: "Costs", href: "/admin/costs", icon: "receipt" },
     ],
   },
 ];
@@ -260,7 +260,7 @@ function navItem(item: Item, active: boolean): string {
 function navItemLocked(item: Item): string {
   const base =
     "display:flex;align-items:center;gap:11px;padding:9px 10px;font-size:13px;color:var(--dim);border-left:2px solid transparent";
-  return `<a href="${UPGRADE_URL}" class="navlink" style="${base}" title="Disponible en Pro">
+  return `<a href="${UPGRADE_URL}" class="navlink" style="${base}" title="Available in Pro">
     <i data-lucide="lock" width="15" height="15" style="color:var(--dim)"></i> ${item.label}
     <span style="margin-left:auto;font-size:8.5px;letter-spacing:.14em;color:var(--accent2);border:1px solid var(--line);padding:1px 5px">PRO</span>
   </a>`;
@@ -306,8 +306,8 @@ function sidebar(activeTab: string, pro: boolean, niche: NichePack | null): stri
           <i data-lucide="bot" width="16" height="16"></i>
         </div>
         <div style="line-height:1.2;overflow:hidden">
-          <div style="font-size:12px;font-weight:600;white-space:nowrap;text-overflow:ellipsis;overflow:hidden">Panel del bot</div>
-          <div style="font-size:10px;color:var(--dim)">sesión activa</div>
+          <div style="font-size:12px;font-weight:600;white-space:nowrap;text-overflow:ellipsis;overflow:hidden">Bot dashboard</div>
+          <div style="font-size:10px;color:var(--dim)">active session</div>
         </div>
       </div>
     </div>
@@ -323,7 +323,7 @@ export function layout(opts: { title: string; activeTab: string; body: string; e
   const item = applyNiche(section.items.find((i) => i.id === opts.activeTab) ?? section.items[0], niche);
 
   return `<!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -343,7 +343,7 @@ export function layout(opts: { title: string; activeTab: string; body: string; e
         <div id="proj-switcher" style="margin-left:auto"></div>
         <div class="live-pill">
           <span style="width:8px;height:8px;border-radius:50%;background:var(--ok);animation:pulse 1.8s ease-in-out infinite,ring 2s infinite"></span>
-          <span style="font-size:11px;font-weight:600;letter-spacing:.04em">BOT EN LÍNEA</span>
+          <span style="font-size:11px;font-weight:600;letter-spacing:.04em">BOT ONLINE</span>
         </div>
       </header>
       <main style="padding:22px 26px;min-width:0">${opts.body}</main>
@@ -351,8 +351,8 @@ export function layout(opts: { title: string; activeTab: string; body: string; e
   </div>
   <div id="modal-root"></div>
   <script>
-  // Selector de proyectos: si esta instancia declara PEER_BOTS, el header
-  // muestra un dropdown para brincar entre bots (cada uno con su panel).
+    // Project selector: when PEER_BOTS is configured, show a dropdown for
+    // switching between bots.
   fetch('/admin/projects').then(function(r){ return r.ok ? r.json() : null }).then(function(d){
     if (!d || !d.peers || d.peers.length === 0) return;
     var el = document.getElementById('proj-switcher');
@@ -361,14 +361,12 @@ export function layout(opts: { title: string; activeTab: string; body: string; e
     d.peers.forEach(function(p){
       opts += '<option value="' + p.url.replace(/"/g,'&quot;') + '">' + p.name.replace(/</g,'&lt;') + '</option>';
     });
-    // Las comillas simples van como &#39;: este bloque vive dentro de un
-    // template literal, así que los \' del código fuente NO llegan al navegador
-    // y cerraban la cadena JS de golpe (SyntaxError en cada carga del panel).
-    // El parser de HTML las decodifica antes de que corran el onchange y el CSS.
+    // Single quotes are encoded as &#39; because this block lives inside a
+    // template literal. The HTML parser decodes them before onchange runs.
     el.innerHTML = '<select onchange="if(this.value.indexOf(&#39;http&#39;)===0)window.location=this.value" ' +
       'style="background:rgba(20,16,9,.9);color:var(--fg,#e8e0cf);border:1px solid var(--line);border-radius:8px;' +
       'padding:6px 10px;font-family:&#39;JetBrains Mono&#39;,monospace;font-size:11px;letter-spacing:.04em;cursor:pointer" ' +
-      'title="Cambiar de proyecto">' + opts + '</select>';
+      'title="Switch project">' + opts + '</select>';
   }).catch(function(){});
   </script>
   <div id="toast-root" style="position:fixed;bottom:1rem;right:1rem;z-index:60"></div>
@@ -382,11 +380,11 @@ export function layout(opts: { title: string; activeTab: string; body: string; e
 // el nav. `feature` es el nombre del tab que pidió (para personalizar el copy).
 export function renderUpgrade(env: Env, feature?: string): string {
   const perks = [
-    ["scan-eye", "Analista IA", "Resúmenes automáticos de cada conversación: qué querían, objeciones y oportunidad de venta."],
-    ["bar-chart-3", "Estadísticas", "Métricas de volumen, retención y desempeño de tu bot en el tiempo."],
-    ["receipt", "Costos", "Cuánto gasta tu bot en IA, con tope de presupuesto mensual."],
-    ["sparkles", "Mejoras", "El bot detecta huecos en su conocimiento y se mejora solo (flywheel)."],
-    ["megaphone", "Campañas", "Manda difusiones y seguimientos por WhatsApp a tus segmentos."],
+    ["scan-eye", "AI Analyst", "Automatic summaries of every conversation: intent, objections, and sales opportunities."],
+    ["bar-chart-3", "Statistics", "Volume, retention, and bot performance metrics over time."],
+    ["receipt", "Costs", "AI spending with a monthly budget cap."],
+    ["sparkles", "Improvements", "The bot detects knowledge gaps and improves itself (flywheel)."],
+    ["megaphone", "Campaigns", "Send WhatsApp broadcasts and follow-ups to your segments."],
   ]
     .map(
       ([icon, title, desc]) => `<div style="display:flex;gap:12px;padding:14px;border:1px solid var(--line);background:var(--panel)">
@@ -401,19 +399,19 @@ export function renderUpgrade(env: Env, feature?: string): string {
     <div class="card" style="max-width:720px">
       <div style="border:1px solid var(--linelit);background:var(--panel);box-shadow:6px 6px 0 var(--linelit);padding:28px">
         <div style="display:inline-flex;align-items:center;gap:8px;border:1px solid var(--accent);color:var(--accent2);font-size:10px;letter-spacing:.16em;padding:4px 10px;text-transform:uppercase">
-          <i data-lucide="lock" width="13" height="13"></i> Función Pro
+          <i data-lucide="lock" width="13" height="13"></i> Pro feature
         </div>
         <h2 style="font-family:'Space Grotesk';font-weight:700;font-size:24px;letter-spacing:-.02em;margin:14px 0 6px">
-          ${feature ? `“${feature}” es parte de Pro` : "Desbloquea el panel Pro"}
+          ${feature ? `“${feature}” is part of Pro` : "Unlock the Pro dashboard"}
         </h2>
         <p style="font-size:13.5px;color:var(--muted);line-height:1.6;margin:0 0 20px;max-width:560px">
-          Tu bot Starter ya atiende clientes, responde con tu conocimiento y captura leads.
-          El panel <b style="color:var(--cream)">Pro</b> le suma el cerebro analítico y de crecimiento:
+          Your Starter bot already serves customers, answers with your knowledge, and captures leads.
+          The <b style="color:var(--cream)">Pro</b> plan adds analytics and growth tools:
         </p>
         <div style="display:grid;gap:10px;margin-bottom:22px">${perks}</div>
         <a href="https://horizontesia.com" target="_blank" rel="noopener" class="bigbtn"
           style="display:inline-flex;align-items:center;gap:8px;background:var(--accent);border:1px solid var(--accent);color:#1a1206;box-shadow:4px 4px 0 var(--linelit);padding:12px 20px;font-family:'Space Grotesk';font-weight:700;font-size:14px">
-          <i data-lucide="arrow-up-right" width="17" height="17"></i> Subir a Pro con la comunidad
+          <i data-lucide="arrow-up-right" width="17" height="17"></i> Upgrade to Pro with the community
         </a>
       </div>
     </div>`;
@@ -422,7 +420,7 @@ export function renderUpgrade(env: Env, feature?: string): string {
 
 export function loginPage(error?: string): string {
   return `<!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -437,8 +435,8 @@ export function loginPage(error?: string): string {
         <i data-lucide="terminal" width="18" height="18" style="color:var(--accent)"></i>
       </div>
       <div>
-        <h1 style="font-family:'Space Grotesk';font-weight:700;font-size:18px;margin:0;letter-spacing:-.02em">Dashboard del bot</h1>
-        <p style="font-size:11px;color:var(--dim);margin:2px 0 0">Te mandamos un link a tu email para entrar.</p>
+        <h1 style="font-family:'Space Grotesk';font-weight:700;font-size:18px;margin:0;letter-spacing:-.02em">Bot dashboard</h1>
+        <p style="font-size:11px;color:var(--dim);margin:2px 0 0">We will send a login link to your email.</p>
       </div>
     </div>
     ${error ? `<p style="color:var(--bad);font-size:12px;margin:0 0 12px">${error}</p>` : ""}
@@ -446,7 +444,7 @@ export function loginPage(error?: string): string {
       style="width:100%;background:var(--bg);border:1px solid var(--line);color:var(--cream);padding:10px 12px;font-size:13px;outline:none;margin-bottom:14px">
     <button class="bigbtn" type="submit"
       style="width:100%;background:var(--accent);border:1px solid var(--accent);color:#1a1206;box-shadow:4px 4px 0 var(--linelit);padding:11px;font-family:'Space Grotesk';font-weight:700;font-size:13px;cursor:pointer">
-      Mandar link
+      Send login link
     </button>
   </form>
   ${GLOBAL_SCRIPT}

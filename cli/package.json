@@ -1,7 +1,7 @@
 {
   "name": "forjabot",
   "version": "1.1.40",
-  "description": "Forja — instala bots de IA en tu propia infraestructura, en un comando. Las piezas las ponemos nosotros; tu agente las arma. Por Horizontes IA.",
+  "description": "Forja — install AI bots in your own infrastructure from one command. By Horizontes IA.",
   "license": "MIT",
   "author": "Horizontes IA (Santiago Muñoz) <contacto@innovandohorizontes.com>",
   "homepage": "https://forjabots.com/docs/",

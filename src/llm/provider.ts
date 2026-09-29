@@ -13,7 +13,7 @@ import { egressFetch, sanitizeHeaderValue } from "../http/egress";
  * provider maps a tier to a concrete model id (env-overridable). Embeddings and
  * voice transcription stay on Cloudflare Workers AI regardless of this setting.
  */
-export type LlmProvider = "anthropic" | "openai" | "xai";
+export type LlmProvider = "anthropic" | "openai" | "xai" | "mimo";
 
 const ANTHROPIC_DEFAULTS: Record<Tier, string> = {
   fast: "claude-haiku-4-5-20251001",
@@ -30,6 +30,13 @@ const XAI_DEFAULTS: Record<Tier, string> = {
   smart: "grok-4",
 };
 
+const MIMO_DEFAULTS: Record<Tier, string> = {
+  fast: "mimo-v2.6-flash",
+  smart: "mimo-v2.6-pro",
+};
+
+const MIMO_DEFAULT_BASE_URL = "https://api.xiaomimimo.com/v1";
+
 /**
  * Owner overrides from the dashboard (D1 `settings`): provider, BYO API key
  * and/or a concrete model id. Anything empty falls back to env behavior.
@@ -43,17 +50,19 @@ export interface LlmOverrides {
 
 /** Models offered in the dashboard picker. */
 export const CURATED_MODELS: { id: string; label: string; provider: LlmProvider }[] = [
-  { id: "claude-haiku-4-5-20251001", label: "Claude Haiku 4.5 · rápido y barato", provider: "anthropic" },
-  { id: "claude-sonnet-4-5-20250929", label: "Claude Sonnet 4.5 · equilibrado", provider: "anthropic" },
-  { id: "claude-sonnet-4-6", label: "Claude Sonnet 4.6 · el mejor equilibrio", provider: "anthropic" },
-  { id: "claude-opus-4-6", label: "Claude Opus 4.6 · máxima inteligencia", provider: "anthropic" },
-  { id: "gpt-4o-mini", label: "GPT-4o mini · rápido y barato", provider: "openai" },
-  { id: "gpt-4o", label: "GPT-4o · equilibrado", provider: "openai" },
-  { id: "gpt-4.1-mini", label: "GPT-4.1 mini · rápido", provider: "openai" },
-  { id: "gpt-4.1", label: "GPT-4.1 · más capaz", provider: "openai" },
-  { id: "grok-4-fast-non-reasoning", label: "Grok 4 Fast · rápido y barato", provider: "xai" },
-  { id: "grok-3-mini", label: "Grok 3 mini · económico", provider: "xai" },
-  { id: "grok-4", label: "Grok 4 · más capaz", provider: "xai" },
+  { id: "claude-haiku-4-5-20251001", label: "Claude Haiku 4.5 · fast and affordable", provider: "anthropic" },
+  { id: "claude-sonnet-4-5-20250929", label: "Claude Sonnet 4.5 · balanced", provider: "anthropic" },
+  { id: "claude-sonnet-4-6", label: "Claude Sonnet 4.6 · best balance", provider: "anthropic" },
+  { id: "claude-opus-4-6", label: "Claude Opus 4.6 · maximum intelligence", provider: "anthropic" },
+  { id: "gpt-4o-mini", label: "GPT-4o mini · fast and affordable", provider: "openai" },
+  { id: "gpt-4o", label: "GPT-4o · balanced", provider: "openai" },
+  { id: "gpt-4.1-mini", label: "GPT-4.1 mini · fast", provider: "openai" },
+  { id: "gpt-4.1", label: "GPT-4.1 · more capable", provider: "openai" },
+  { id: "grok-4-fast-non-reasoning", label: "Grok 4 Fast · fast and affordable", provider: "xai" },
+  { id: "grok-3-mini", label: "Grok 3 mini · economical", provider: "xai" },
+  { id: "grok-4", label: "Grok 4 · more capable", provider: "xai" },
+  { id: "mimo-v2.6-flash", label: "MiMo V2.6 Flash", provider: "mimo" },
+  { id: "mimo-v2.6-pro", label: "MiMo V2.6 Pro", provider: "mimo" },
 ];
 
 /**
@@ -67,6 +76,8 @@ export function resolveProvider(env: Env): LlmProvider {
   // BUG FIX 2026-07-12: faltaba la rama xai — LLM_PROVIDER="xai" caía al
   // default (anthropic), dejando a Grok como mero fallback todo el tiempo.
   if (explicit === "xai") return "xai";
+  if (explicit === "mimo") return "mimo";
+  if (!env.ANTHROPIC_API_KEY && !env.OPENAI_API_KEY && env.MIMO_API_KEY) return "mimo";
   if (!env.ANTHROPIC_API_KEY && env.OPENAI_API_KEY) return "openai";
   return "anthropic";
 }
@@ -80,6 +91,11 @@ export function modelIdFor(env: Env, provider: LlmProvider, tier: Tier): string 
   }
   if (provider === "xai") {
     return tier === "smart" ? XAI_DEFAULTS.smart : XAI_DEFAULTS.fast;
+  }
+  if (provider === "mimo") {
+    const smart = env.MIMO_MODEL_SMART?.trim() || MIMO_DEFAULTS.smart;
+    const fast = env.MIMO_MODEL_FAST?.trim() || MIMO_DEFAULTS.fast;
+    return tier === "smart" ? smart : fast;
   }
   const smart = env.ANTHROPIC_MODEL_SMART?.trim() || ANTHROPIC_DEFAULTS.smart;
   const fast = env.ANTHROPIC_MODEL_FAST?.trim() || ANTHROPIC_DEFAULTS.fast;
@@ -99,6 +115,7 @@ export interface ResolvedModel {
 function envKeyFor(env: Env, provider: LlmProvider): string | undefined {
   if (provider === "openai") return env.OPENAI_API_KEY;
   if (provider === "xai") return env.XAI_API_KEY;
+  if (provider === "mimo") return env.MIMO_API_KEY;
   return env.ANTHROPIC_API_KEY;
 }
 
@@ -112,7 +129,9 @@ function baseURLFor(env: Env, provider: LlmProvider): string | undefined {
       ? env.OPENAI_BASE_URL
       : provider === "xai"
         ? env.XAI_BASE_URL
-        : env.ANTHROPIC_BASE_URL;
+        : provider === "mimo"
+          ? env.MIMO_BASE_URL || MIMO_DEFAULT_BASE_URL
+          : env.ANTHROPIC_BASE_URL;
   const v = (raw ?? "").trim().replace(/\/+$/, "");
   return v || undefined;
 }
@@ -123,12 +142,30 @@ function gatewayHeaders(env: Env): Record<string, string> | undefined {
   return { "cf-aig-authorization": `Bearer ${token}` };
 }
 
+/**
+ * MiMo V2.6 is a reasoning model by default. When tools are present, MiMo
+ * recommends disabling thinking so tool calls are returned in the normal
+ * OpenAI-compatible tool-call fields instead of only in reasoning_content.
+ */
+async function mimoFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  if (typeof init?.body === "string") {
+    try {
+      const body = JSON.parse(init.body) as Record<string, unknown>;
+      if (body.tools) body.thinking = { type: "disabled" };
+      return egressFetch(input, { ...init, body: JSON.stringify(body) });
+    } catch {
+      // Let the provider surface malformed payload errors normally.
+    }
+  }
+  return egressFetch(input, init);
+}
+
 function providerInit(env: Env, provider: LlmProvider, apiKey: string) {
   const baseURL = baseURLFor(env, provider);
   const headers = gatewayHeaders(env);
   return {
     apiKey,
-    fetch: egressFetch as typeof fetch,
+    fetch: (provider === "mimo" ? mimoFetch : egressFetch) as typeof fetch,
     ...(baseURL ? { baseURL } : {}),
     ...(headers ? { headers } : {}),
   };
@@ -145,13 +182,15 @@ export function createModel(env: Env, tier: Tier, ov?: LlmOverrides): ResolvedMo
   const ovProviderRaw = (ov?.provider ?? "").trim().toLowerCase();
 
   let provider: LlmProvider | null =
-    ovProviderRaw === "anthropic" || ovProviderRaw === "openai" || ovProviderRaw === "xai"
+    ovProviderRaw === "anthropic" || ovProviderRaw === "openai" || ovProviderRaw === "xai" || ovProviderRaw === "mimo"
       ? ovProviderRaw
       : null;
   // Modelo elegido sin proveedor explícito → dedúcelo del id.
   if (!provider && ovModel) {
     provider = /^grok/i.test(ovModel)
       ? "xai"
+      : /^mimo/i.test(ovModel)
+        ? "mimo"
       : /^(gpt|o\d)/i.test(ovModel)
         ? "openai"
         : "anthropic";
@@ -170,8 +209,8 @@ export function createModel(env: Env, tier: Tier, ov?: LlmOverrides): ResolvedMo
 
   const modelId = useOvModel || modelIdFor(env, provider, tier);
 
-  if (provider === "openai") {
-    const openai = createOpenAI(providerInit(env, "openai", apiKey));
+  if (provider === "openai" || provider === "mimo") {
+    const openai = createOpenAI(providerInit(env, provider, apiKey));
     // Chat Completions (`openai.chat`), NO la Responses API que es el default
     // de `openai(modelId)` desde AI SDK 5. Responses trata las function tools
     // como JSON Schema strict si `strict` se omite; nuestras tools (y las de
@@ -206,7 +245,7 @@ export function fallbackModel(
   tier: Tier,
   failedProvider: LlmProvider,
 ): ResolvedModel | null {
-  const order: LlmProvider[] = ["anthropic", "openai", "xai"];
+  const order: LlmProvider[] = ["anthropic", "mimo", "openai", "xai"];
   for (const p of order) {
     if (p === failedProvider) continue;
     if (!envKeyFor(env, p)) continue;

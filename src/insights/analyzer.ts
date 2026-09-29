@@ -90,9 +90,9 @@ export async function countPending(env: Env, now = Date.now()): Promise<number> 
 }
 
 const ROLE_LABEL: Record<string, string> = {
-  user: "Cliente",
+  user: "Customer",
   assistant: "Bot",
-  owner: "Dueño",
+  owner: "Owner",
   tool: "Tool",
 };
 
@@ -109,8 +109,8 @@ function buildTranscript(msgs: { role: string; content: string }[]): string {
 }
 
 function gradingPrompt(env: Env, transcript: string, hasOpenTicket: boolean): string {
-  return `Eres un auditor de calidad del chatbot de atención a clientes de ${env.BUSINESS_NAME}.
-Analiza la conversación completa y responde SOLO con un objeto JSON válido, sin markdown ni explicación:
+  return `You are a quality auditor for the customer-support chatbot of ${env.BUSINESS_NAME}.
+Analyze the complete conversation and respond ONLY with a valid JSON object, without markdown or explanation:
 
 {
   "sentiment": "positive" | "neutral" | "frustrated" | "angry",
@@ -123,19 +123,19 @@ Analiza la conversación completa y responde SOLO con un objeto JSON válido, si
   "customer_facts": ["hecho1", "hecho2"]
 }
 
-Criterios:
-- sentiment: emoción del CLIENTE al final de la conversación.
-- resolution: "escalated" si intervino un humano o se creó un ticket; "abandoned" si el cliente dejó de responder sin resolución clara.
-- bot_score: calidad de las respuestas del bot (exactitud, tono, brevedad, no inventar).
-- topics: 1 a 4 temas cortos en español, en minúsculas.
-- summary: 1-2 frases en español — qué quería el cliente y cómo terminó.
-- missed_kb: si el bot NO supo responder algo concreto del negocio, la pregunta del cliente tal cual; si no, null.
-- sale_opportunity: true SOLO si el cliente mostró intención real de contratar/comprar algo de PAGO y quedó sin cerrar. NO cuentes como oportunidad: registros a eventos gratuitos, saludos, dudas informativas, ni interés vago sin un negocio o necesidad de pago detrás.
-- customer_facts: 0 a 5 datos del CLIENTE útiles para recordarlo en futuras conversaciones (nombre, preferencias, qué compró, qué le molestó). En español, cortos. NUNCA datos sensibles (tarjetas, passwords, direcciones exactas). Lista vacía si no hay nada memorable.
+Criteria:
+- sentiment: the customer's emotion at the end of the conversation.
+- resolution: use "escalated" if a human intervened or a ticket was created; use "abandoned" if the customer stopped replying without a clear resolution.
+- bot_score: quality of the bot's replies (accuracy, tone, brevity, and no fabrication).
+- topics: 1 to 4 short lowercase topics in English.
+- summary: 1–2 short English sentences explaining what the customer wanted and how it ended.
+- missed_kb: if the bot could not answer a concrete business question, copy the customer's question; otherwise null.
+- sale_opportunity: true ONLY when the customer showed real intent to buy or hire a paid offering and it remained open. Do not count free events, greetings, informational questions, or vague interest.
+- customer_facts: 0 to 5 short useful facts about the customer (name, preferences, purchases, frustrations). Never include sensitive data such as cards, passwords, or exact addresses. Use an empty list when nothing is memorable.
 
-Dato: la conversación ${hasOpenTicket ? "SÍ" : "NO"} tiene ticket abierto.
+Open ticket: ${hasOpenTicket ? "YES" : "NO"}.
 
-Conversación:
+Conversation:
 ${transcript}`;
 }
 

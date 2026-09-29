@@ -10,10 +10,10 @@ import { isPro } from "../config";
 export function handoffHumanTool(env: Env, getConversationId: () => string | null) {
   return tool({
     description:
-      "Crea un ticket para el dueño + le manda email. Usalo cuando el bot no puede resolver o el cliente pide humano explícitamente.",
+      "Create a ticket for the owner and send an email. Use it when the bot cannot solve the issue or the customer explicitly asks for a human.",
     inputSchema: z.object({
-      reason: z.string().describe("Categoría corta del problema"),
-      summary: z.string().max(300).describe("Resumen en 1 frase del contexto"),
+      reason: z.string().describe("Short problem category"),
+      summary: z.string().max(300).describe("One-sentence context summary"),
       category: z.enum(["billing", "product", "complaint", "other"]).default("other"),
     }),
     execute: async ({ reason, summary, category }) => {
@@ -39,9 +39,9 @@ export function handoffHumanTool(env: Env, getConversationId: () => string | nul
             from: `${env.BUSINESS_NAME} Bot <onboarding@resend.dev>`,
             to: env.OWNER_EMAIL,
             subject: `[Bot] Ticket ${reason}: ${summary.slice(0, 60)}`,
-            html: `<p><strong>Categoría:</strong> ${category}</p>
-                   <p><strong>Resumen:</strong> ${summary}</p>
-                   <p><a href="${env.DASHBOARD_BASE_URL}/admin/tickets/${ticketId}">Ver ticket</a></p>`,
+            html: `<p><strong>Category:</strong> ${category}</p>
+                   <p><strong>Summary:</strong> ${summary}</p>
+                   <p><a href="${env.DASHBOARD_BASE_URL}/admin/tickets/${ticketId}">View ticket</a></p>`,
           });
         } catch (e) {
           console.error("[handoffHuman] resend failed:", e);
@@ -118,8 +118,8 @@ export async function notifyOwner(env: Env, notice: HandoffNotice): Promise<void
   // lo muestra en "Salud del bot" (handoffNotifyStatus).
   if (!handoffNotifyStatus(env).ok && !waViaSetting) {
     console.error(
-      `[notifyOwner] ticket ${notice.ticketId} creado pero SIN canal de aviso configurado ` +
-        "(faltan OWNER_TELEGRAM_CHAT_ID, OWNER_WA_NUMBER+template o RESEND_API_KEY+OWNER_EMAIL) — el dueño no será notificado",
+      `[notifyOwner] ticket ${notice.ticketId} created but NO notification channel is configured ` +
+        "(missing OWNER_TELEGRAM_CHAT_ID, OWNER_WA_NUMBER+template, or RESEND_API_KEY+OWNER_EMAIL) — the owner will not be notified",
     );
     return;
   }
@@ -135,7 +135,7 @@ export async function notifyOwner(env: Env, notice: HandoffNotice): Promise<void
           body: JSON.stringify({
             chat_id: env.OWNER_TELEGRAM_CHAT_ID,
             text:
-              `🚨 Nuevo ticket [${notice.reason}]\n${notice.summary}\n\nVer: ${ticketUrl}`,
+              `🚨 New ticket [${notice.reason}]\n${notice.summary}\n\nView: ${ticketUrl}`,
           }),
         },
       );

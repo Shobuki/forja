@@ -22,7 +22,7 @@ function esc(s: string): string {
 
 function areaChart(points: { label: string; value: number }[], width = 640, height = 150): string {
   if (points.length === 0) {
-    return `<p class="text-[12.5px] text-dim py-8 text-center">Aún no hay actividad.</p>`;
+    return `<p class="text-[12.5px] text-dim py-8 text-center">No activity yet.</p>`;
   }
   const pad = 12;
   const max = Math.max(...points.map((p) => p.value), 1);
@@ -36,7 +36,7 @@ function areaChart(points: { label: string; value: number }[], width = 640, heig
 
   return `
   <div class="overflow-x-auto">
-    <svg viewBox="0 0 ${width} ${height}" class="w-full" style="min-width:480px" role="img" aria-label="Mensajes por día">
+    <svg viewBox="0 0 ${width} ${height}" class="w-full" style="min-width:480px" role="img" aria-label="Messages per day">
       <line x1="${pad}" y1="${height - pad}" x2="${width - pad}" y2="${height - pad}" stroke="var(--line)" stroke-width="1"/>
       <path d="${area}" fill="${ACCENT}" opacity="0.14"/>
       <polyline points="${line}" fill="none" stroke="${ACCENT}" stroke-width="2" stroke-linejoin="round"/>
@@ -50,7 +50,7 @@ function areaChart(points: { label: string; value: number }[], width = 640, heig
 
 // --- Heatmap día × hora -----------------------------------------------------------
 
-const DOW = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 function heatmap(cells: Map<string, number>): string {
   const max = Math.max(...cells.values(), 1);
@@ -59,7 +59,7 @@ function heatmap(cells: Map<string, number>): string {
       const n = cells.get(`${dow}:${hour}`) ?? 0;
       const alpha = n === 0 ? 0 : 0.12 + 0.8 * (n / max);
       const bg = n === 0 ? "var(--panel2)" : `rgba(240,122,63,${alpha.toFixed(2)})`;
-      return `<td class="p-0"><div style="width:13px;height:13px;background:${bg}" title="${name} ${hour}:00 — ${n} ${n === 1 ? "mensaje" : "mensajes"}"></div></td>`;
+      return `<td class="p-0"><div style="width:13px;height:13px;background:${bg}" title="${name} ${hour}:00 — ${n} ${n === 1 ? "message" : "messages"}"></div></td>`;
     }).join("");
     return `<tr><td class="pr-2 text-[9px] text-dim font-mono text-right">${name}</td>${tds}</tr>`;
   }).join("");
@@ -185,33 +185,33 @@ export async function renderStats(env: Env): Promise<string> {
   const body = `
     <div class="flex flex-col gap-4" style="max-width:1080px">
       <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-        ${bigCard(`${savedHours.toFixed(1)}<span class="text-[16px] text-dim"> h</span>`, "⏱ Horas ahorradas", "mensajes atendidos × 2 min · 30 días", true)}
-        ${bigCard(costPerConv === null ? "—" : money(costPerConv), "Costo por conversación", "IA / conversaciones · 30 días")}
-        ${bigCard(`<span class="text-accent">${costPerLead === null ? "—" : money(costPerLead)}</span>`, "💰 Costo por lead", "IA / leads captados · 30 días")}
-        ${bigCard(`<span class="text-ok">${resolvedPct === null ? "—" : `${resolvedPct}%`}</span>`, "Resueltas sin humano", "según el análisis de IA · 30 días")}
+        ${bigCard(`${savedHours.toFixed(1)}<span class="text-[16px] text-dim"> h</span>`, "⏱ Hours saved", "handled messages × 2 min · 30 days", true)}
+        ${bigCard(costPerConv === null ? "—" : money(costPerConv), "Cost per conversation", "AI / conversations · 30 days")}
+        ${bigCard(`<span class="text-accent">${costPerLead === null ? "—" : money(costPerLead)}</span>`, "💰 Cost per lead", "AI / captured leads · 30 days")}
+        ${bigCard(`<span class="text-ok">${resolvedPct === null ? "—" : `${resolvedPct}%`}</span>`, "Resolved without a human", "according to AI analysis · 30 days")}
       </div>
 
       <div class="card bg-panel border border-line p-[18px]">
-        <div class="font-display font-semibold text-[14px] mb-3">📈 Mensajes por día <span class="text-[10px] text-dim font-normal">(30 días)</span></div>
+        <div class="font-display font-semibold text-[14px] mb-3">📈 Messages per day <span class="text-[10px] text-dim font-normal">(30 days)</span></div>
         ${areaChart(byDay.map((d) => ({ label: d.day.slice(5), value: d.msgs })))}
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-[14px]">
         <div class="card bg-panel border border-line p-[18px]">
-          <div class="font-display font-semibold text-[14px] mb-4">🎯 Funnel de conversión <span class="text-[10px] text-dim font-normal">(30 días)</span></div>
+          <div class="font-display font-semibold text-[14px] mb-4">🎯 Conversion funnel <span class="text-[10px] text-dim font-normal">(30 days)</span></div>
           <div class="flex flex-col gap-3">
             ${funnel([
               { label: "Conversaciones", value: nConvs },
               { label: "💰 Leads", value: nLeads },
-              { label: "Contactados", value: nContacted },
+              { label: "Contacted", value: nContacted },
               { label: "✅ Vendidos", value: nSold },
             ])}
           </div>
         </div>
         <div class="card bg-panel border border-line p-[18px]">
-          <div class="font-display font-semibold text-[14px] mb-4">🔥 Horas pico <span class="text-[10px] text-dim font-normal">(mensajes de clientes, 30 días)</span></div>
+          <div class="font-display font-semibold text-[14px] mb-4">🔥 Peak hours <span class="text-[10px] text-dim font-normal">(customer messages, 30 days)</span></div>
           ${heatmap(heatCells)}
-          <p class="text-[10px] text-dim mt-2.5 leading-relaxed">Las horas fuera de tu horario son donde el bot es el único que contesta.</p>
+          <p class="text-[10px] text-dim mt-2.5 leading-relaxed">Outside your business hours, the bot is the only one replying.</p>
         </div>
       </div>
 
@@ -219,17 +219,17 @@ export async function renderStats(env: Env): Promise<string> {
         <div class="card bg-panel border border-line p-[18px]">
           <div class="font-display font-semibold text-[14px] mb-2.5">Por canal</div>
           <table class="w-full text-[12.5px]"><tbody>
-            ${channels.map((c) => `<tr style="border-top:1px solid var(--line)"><td class="py-2.5 text-cream">${esc(channelLabel(c.channel))}</td><td class="text-right text-muted text-[11px]">${c.n}</td></tr>`).join("") || `<tr><td class="py-3 text-dim text-[12.5px]">Sin datos.</td></tr>`}
+            ${channels.map((c) => `<tr style="border-top:1px solid var(--line)"><td class="py-2.5 text-cream">${esc(channelLabel(c.channel))}</td><td class="text-right text-muted text-[11px]">${c.n}</td></tr>`).join("") || `<tr><td class="py-3 text-dim text-[12.5px]">No data.</td></tr>`}
           </tbody></table>
         </div>
         <div class="card bg-panel border border-line p-[18px]">
-          <div class="font-display font-semibold text-[14px] mb-2.5">Tools más usadas</div>
+          <div class="font-display font-semibold text-[14px] mb-2.5">Most used tools</div>
           <table class="w-full text-[12px]"><tbody>
-            ${tools.filter((t) => t.tool).map((t) => `<tr style="border-top:1px solid var(--line)"><td class="py-2.5 text-accent2">${esc(t.tool)}</td><td class="text-right text-muted text-[11px]">${t.n}</td></tr>`).join("") || `<tr><td class="py-3 text-dim text-[12.5px]">Aún sin tool calls registradas.</td></tr>`}
+            ${tools.filter((t) => t.tool).map((t) => `<tr style="border-top:1px solid var(--line)"><td class="py-2.5 text-accent2">${esc(t.tool)}</td><td class="text-right text-muted text-[11px]">${t.n}</td></tr>`).join("") || `<tr><td class="py-3 text-dim text-[12.5px]">No tool calls recorded yet.</td></tr>`}
           </tbody></table>
         </div>
       </div>
     </div>`;
 
-  return layout({ title: "Estadísticas", activeTab: "stats", body, env });
+  return layout({ title: "Statistics", activeTab: "stats", body, env });
 }

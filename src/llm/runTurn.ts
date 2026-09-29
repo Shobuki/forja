@@ -3,6 +3,7 @@ import { formatLlmError, isLikelyRequestOrStreamFailure } from "./errorDetail";
 
 export interface LlmTurnArgs {
   model: any;
+  provider?: string;
   system: any;
   messages: any[];
   tools: Record<string, any>;
@@ -26,6 +27,9 @@ function callArgs(args: LlmTurnArgs) {
     messages: args.messages,
     tools: args.tools,
     stopWhen: args.stopWhen,
+    ...(args.provider === "mimo"
+      ? { providerOptions: { openai: { strictJsonSchema: false } } }
+      : {}),
     ...(args.temperature !== undefined ? { temperature: args.temperature } : {}),
   };
 }

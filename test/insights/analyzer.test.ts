@@ -87,9 +87,9 @@ describe("analyzeConversations", () => {
     expect(row?.bot_score).toBe(3);
     expect(row?.missed_kb).toContain("activación");
 
-    // The grader received the transcript with role labels in Spanish.
+    // The grader receives the transcript with English role labels.
     const call = generateTextMock.mock.calls[0][0] as { prompt: string };
-    expect(call.prompt).toContain("Cliente: Ya pagué y no tengo acceso");
+    expect(call.prompt).toContain("Customer: Ya pagué y no tengo acceso");
     expect(call.prompt).toContain("Bot: Déjame revisar tu pago.");
     expect(call.prompt).toContain("Negocio Test");
   });

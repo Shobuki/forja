@@ -44,6 +44,12 @@ describe("resolveProvider", () => {
   it("auto-selects openai when only the openai key is set", () => {
     expect(resolveProvider({ OPENAI_API_KEY: "sk-oa" } as Env)).toBe("openai");
   });
+  it("honors LLM_PROVIDER=mimo", () => {
+    expect(resolveProvider(env({ LLM_PROVIDER: "mimo", MIMO_API_KEY: "sk-mimo" }))).toBe("mimo");
+  });
+  it("auto-selects mimo when it is the only alternative key", () => {
+    expect(resolveProvider({ MIMO_API_KEY: "sk-mimo" } as Env)).toBe("mimo");
+  });
 });
 
 describe("modelIdFor", () => {
@@ -54,6 +60,11 @@ describe("modelIdFor", () => {
   it("openai tier defaults", () => {
     expect(modelIdFor(env(), "openai", "fast")).toBe("gpt-4o-mini");
     expect(modelIdFor(env(), "openai", "smart")).toBe("gpt-4o");
+  });
+  it("mimo tier defaults and env overrides", () => {
+    expect(modelIdFor(env(), "mimo", "fast")).toBe("mimo-v2.6-flash");
+    expect(modelIdFor(env(), "mimo", "smart")).toBe("mimo-v2.6-pro");
+    expect(modelIdFor(env({ MIMO_MODEL_SMART: "mimo-custom" }), "mimo", "smart")).toBe("mimo-custom");
   });
   it("env overrides win", () => {
     expect(modelIdFor(env({ OPENAI_MODEL_SMART: "gpt-5" }), "openai", "smart")).toBe("gpt-5");
@@ -77,6 +88,13 @@ describe("createModel", () => {
   it("usa Chat Completions (openai.chat), no la Responses API default", () => {
     const r = createModel(env({ LLM_PROVIDER: "openai", OPENAI_API_KEY: "sk-oa" }), "smart");
     expect(r.model).toEqual({ p: "openai", modelId: "gpt-4o", api: "chat" });
+  });
+  it("uses the OpenAI-compatible Chat Completions path for MiMo", () => {
+    const r = createModel(env({ LLM_PROVIDER: "mimo", MIMO_API_KEY: "sk-mimo" }), "smart");
+    expect(r.provider).toBe("mimo");
+    expect(r.model).toEqual({ p: "openai", modelId: "mimo-v2.6-pro", api: "chat" });
+    expect(mocks.lastOpenAI?.apiKey).toBe("sk-mimo");
+    expect(mocks.lastOpenAI?.baseURL).toBe("https://api.xiaomimimo.com/v1");
   });
 
   it("limpia CR/LF de la API key (secret pegado en Git Bash de Windows)", () => {

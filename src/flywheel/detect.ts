@@ -58,15 +58,15 @@ export async function detectKbGaps(env: Env, limit = 3): Promise<FlywheelResult>
     try {
       const result = await generateText({
         model,
-        prompt: `Eres el redactor de la base de conocimiento del negocio "${env.BUSINESS_NAME}".
-Contexto del negocio:
+        prompt: `You write knowledge-base entries for "${env.BUSINESS_NAME}".
+Business context:
 ${renderBusinessContext()}
 
-Los clientes preguntaron esto y el bot NO supo responder:
+Customers asked this and the bot could not answer:
 "${gap.question}"
 
-Redacta una entrada de base de conocimiento que la responda. Si el contexto del negocio no tiene el dato, escribe la entrada con el marcador [COMPLETA AQUÍ] donde falte información real.
-Responde SOLO con JSON: {"title": "...", "content": "..."} (content: 2-6 frases en español, directas).`,
+Write a knowledge-base entry that answers it. If the business context does not contain the information, use the marker [COMPLETE HERE] where real information is missing.
+Respond ONLY with JSON: {"title": "...", "content": "..."} (content: 2–6 direct English sentences).`,
       });
       const draft = extractJson<{ title?: string; content?: string }>(result.text);
       if (!draft?.content) {
@@ -78,7 +78,7 @@ Responde SOLO con JSON: {"title": "...", "content": "..."} (content: 2-6 frases 
         fingerprint: gap.question,
         title: draft.title?.trim() || gap.question,
         payload: { question: gap.question, title: draft.title ?? gap.question, content: draft.content },
-        evidence: `${gap.n} ${gap.n === 1 ? "cliente preguntó" : "clientes preguntaron"} esto y el bot no supo responder.`,
+        evidence: `${gap.n} ${gap.n === 1 ? "customer asked" : "customers asked"} this and the bot could not answer.`,
       });
       if (id) created++;
     } catch (e) {
@@ -116,19 +116,19 @@ export async function detectLessons(env: Env, limit = 3): Promise<FlywheelResult
     try {
       const history = await msgs.lastN(conv.conversation_id, 30);
       const transcript = history
-        .map((m) => `${m.role === "user" ? "Cliente" : m.role === "owner" ? "Dueño" : "Bot"}: ${m.content.slice(0, 400)}`)
+        .map((m) => `${m.role === "user" ? "Customer" : m.role === "owner" ? "Owner" : "Bot"}: ${m.content.slice(0, 400)}`)
         .join("\n");
 
       const result = await generateText({
         model,
-        prompt: `En esta conversación el DUEÑO del negocio tuvo que intervenir a mano.
-Compara cómo respondía el bot vs. cómo respondió el dueño.
+        prompt: `In this conversation, the business OWNER had to intervene manually.
+Compare how the bot replied with how the owner replied.
 
 ${transcript}
 
-¿Qué regla operativa CORTA (máx 140 caracteres, en español, imperativa) debería seguir el bot la próxima vez para que el dueño no tenga que intervenir? Debe ser una regla general, no específica de este cliente.
-Si no hay una lección clara y generalizable, responde {"lesson": null}.
-Responde SOLO con JSON: {"lesson": "..." | null}`,
+What SHORT operational rule (maximum 140 characters, in imperative English) should the bot follow next time so the owner does not need to intervene? It must be general, not specific to this customer.
+If there is no clear and generalizable lesson, answer {"lesson": null}.
+Respond ONLY with JSON: {"lesson": "..." | null}`,
       });
       const parsed = extractJson<{ lesson?: string | null }>(result.text);
       const lesson = parsed?.lesson?.trim();
@@ -139,7 +139,7 @@ Responde SOLO con JSON: {"lesson": "..." | null}`,
         fingerprint: conv.conversation_id,
         title: lesson.slice(0, 140),
         payload: { lesson: lesson.slice(0, 140), conversationId: conv.conversation_id },
-        evidence: `De tu intervención en la conversación con ${conv.display_name ?? conv.conversation_id}.`,
+        evidence: `From your intervention in the conversation with ${conv.display_name ?? conv.conversation_id}.`,
       });
       if (id) created++;
     } catch (e) {

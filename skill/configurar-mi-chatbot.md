@@ -177,6 +177,12 @@ wrangler secret put OPENAI_API_KEY
 ```
 Y en `wrangler.toml`, dentro de `[vars]`, pon `LLM_PROVIDER = "openai"`.
 
+Si eligió **MiMo (Xiaomi)**:
+```bash
+wrangler secret put MIMO_API_KEY
+```
+En `wrangler.toml`, dentro de `[vars]`, pon `LLM_PROVIDER = "mimo"`. Forja usa por defecto el endpoint OpenAI-compatible `https://api.xiaomimimo.com/v1`, con `mimo-v2.6-flash` y `mimo-v2.6-pro`.
+
 (Si no tiene la llave, mándalo a la consola del proveedor que eligió, espera a que la tenga, y luego corre el comando. La llave de pago es lo único que cuesta: fracciones de centavo por conversación.)
 
 ### Paso 1.5 — Contraseña del panel (Basic Auth)

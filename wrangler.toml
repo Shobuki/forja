@@ -1,7 +1,7 @@
 # Member replaces {{BOT_SLUG}} via the skill /configurar-mi-chatbot.
 # DO NOT commit member-specific values to git.
 
-name = "horizontes-bot-{{BOT_SLUG}}"
+name = "horizontes-bot-alfredo-portfolio"
 main = "src/index.ts"
 compatibility_date = "2026-05-01"
 compatibility_flags = ["nodejs_compat"]
@@ -19,24 +19,30 @@ new_sqlite_classes = ["SupportAgent"]
 
 [[d1_databases]]
 binding = "DB"
-database_name = "horizontes_bot_db"
-database_id = "{{D1_DATABASE_ID}}"  # filled in by skill at deploy time
+  database_name = "forja_alfredo_portfolio_db"
+  database_id = "3a99a4b9-70f2-4126-a3bb-3f2e1557ac96"
 
 [[vectorize]]
 binding = "KB"
-index_name = "horizontes_bot_kb"
+  index_name = "horizontes-bot-alfredo-portfolio-kb"
 
 [[r2_buckets]]
 binding = "CATALOG"
-bucket_name = "horizontes-bot-catalog-{{BOT_SLUG}}"
+  bucket_name = "horizontes-bot-catalog-alfredo-portfolio"
 
 [vars]
-BOT_NAME = "{{BOT_NAME}}"
-BUSINESS_NAME = "{{BUSINESS_NAME}}"
-BOT_LANGUAGE = "{{BOT_LANGUAGE}}"
-BOT_TIER = "{{BOT_TIER}}"  # 'free' | 'pro'
+BOT_NAME = "Alfredo AI"
+BUSINESS_NAME = "Alfredo's Portfolio"
+BOT_LANGUAGE = "en"
+BOT_TIER = "pro"  # 'free' | 'pro'
+LLM_PROVIDER = "mimo"
+MIMO_BASE_URL = "https://api.xiaomimimo.com/v1"
+MIMO_MODEL_FAST = "mimo-v2.6-flash"
+MIMO_MODEL_SMART = "mimo-v2.6-flash"
+WEBCHAT_LLM_PROVIDER = "workers-ai"
+WORKERS_AI_MODEL_FAST = "@cf/meta/llama-3.2-1b-instruct"
 BUFFER_SECONDS = "15"
-DASHBOARD_BASE_URL = "https://horizontes-bot-{{BOT_SLUG}}.workers.dev"
+DASHBOARD_BASE_URL = "https://horizontes-bot-alfredo-portfolio.dagonzaalfredo.workers.dev"
 
 # Optional egress (ticket 7E5F40): Worker→Anthropic/Zernio 400 vacío.
 #   AGENT_LOCATION_HINT = "wnam"   # pin DOs near US (only on FIRST create)
@@ -44,6 +50,7 @@ DASHBOARD_BASE_URL = "https://horizontes-bot-{{BOT_SLUG}}.workers.dev"
 #   CF_AIG_TOKEN               secret — AI Gateway (cf-aig-authorization)
 #
 # Secrets (set with `wrangler secret put <NAME>` — never commit values):
+#   MIMO_API_KEY               required when LLM_PROVIDER = "mimo" — Xiaomi MiMo API
 #   ANTHROPIC_API_KEY          required — Claude API
 #   DASHBOARD_PASSWORD         required (Pro) — HTTP Basic Auth for /admin (user: admin)
 #   KB_REINDEX_TOKEN           required — guards POST /kb/reindex (header: X-Reindex-Token)
@@ -61,6 +68,7 @@ DASHBOARD_BASE_URL = "https://horizontes-bot-{{BOT_SLUG}}.workers.dev"
 #   CONTROL_PLANE_TOKEN        optional (secret) — Bearer the hosted control plane presents to call /api/*
 #                              set with: wrangler secret put CONTROL_PLANE_TOKEN
 #   CONTROL_PLANE_URL          optional (var) — base URL of the control plane (future reports / license check)
+#   WEBCHAT_TOKEN              secret — Bearer token for the portfolio's server-side chat proxy
 
 [triggers]
 # AGREGA ticks aquí si los necesitas, pero NO quites "0 3 * * *": los trabajos

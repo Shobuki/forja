@@ -27,10 +27,10 @@ export async function renderTickets(env: Env): Promise<string> {
         </div>
         <p class="text-muted text-[12.5px] leading-relaxed" style="margin:0 0 12px">${t.summary}</p>
         <form method="POST" action="/admin/tickets/${t.id}/resolve" style="display:flex;gap:8px">
-          <input name="resolved_by" placeholder="tu email" required
+          <input name="resolved_by" placeholder="your email" required
                  style="flex:1;background:var(--bg);border:1px solid var(--line);color:var(--cream);padding:9px 12px;font-size:12.5px;outline:none">
           <button class="bigbtn font-display font-bold text-[11.5px] cursor-pointer"
-                  style="background:var(--accent);border:1px solid var(--accent);color:#1a1206;box-shadow:3px 3px 0 var(--linelit);padding:9px 16px">Resolver</button>
+                  style="background:var(--accent);border:1px solid var(--accent);color:#1a1206;box-shadow:3px 3px 0 var(--linelit);padding:9px 16px">Resolve</button>
         </form>
       </div>`;
     })
@@ -39,7 +39,7 @@ export async function renderTickets(env: Env): Promise<string> {
   const body =
     open.length === 0
       ? `<div class="bg-panel border border-line" style="padding:40px 18px;text-align:center">
-           <p class="text-dim text-[12.5px]">No hay tickets abiertos.</p>
+           <p class="text-dim text-[12.5px]">No open tickets.</p>
          </div>`
       : list;
 

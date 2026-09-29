@@ -67,25 +67,25 @@ const SVG_PAUSE = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24
 
 export const TONE_CONTROL: ControlDef = {
   key: SETTING_KEYS.tone,
-  title: "Tono",
-  help: "Cómo le habla el bot a sus clientes.",
+  title: "Tone",
+  help: "How the bot speaks to customers.",
   options: [
     {
-      value: "cálido y cercano",
-      label: "Cálido",
-      desc: "Amable y cercano, como un amigo.",
+      value: "warm and approachable",
+      label: "Warm",
+      desc: "Friendly and approachable, like a friend.",
       svg: SVG_SMILE,
     },
     {
-      value: "formal y profesional",
+      value: "formal and professional",
       label: "Formal",
-      desc: "Serio y profesional, trato de usted.",
+      desc: "Serious and professional.",
       svg: SVG_BRIEFCASE,
     },
     {
-      value: "divertido y relajado",
-      label: "Divertido",
-      desc: "Relajado y con buen humor.",
+      value: "fun and relaxed",
+      label: "Fun",
+      desc: "Relaxed and good-humored.",
       svg: SVG_CONFETTI,
     },
   ],
@@ -93,25 +93,25 @@ export const TONE_CONTROL: ControlDef = {
 
 export const SPEED_CONTROL: ControlDef = {
   key: SETTING_KEYS.bufferSeconds,
-  title: "Velocidad de respuesta",
-  help: "Qué tanto espera el bot a que el cliente termine de escribir.",
+  title: "Reply speed",
+  help: "How long the bot waits for the customer to finish typing.",
   options: [
     {
       value: "5",
-      label: "Rápido",
-      desc: "Responde casi al instante (5 segundos).",
+      label: "Fast",
+      desc: "Replies almost instantly (5 seconds).",
       svg: SVG_BOLT,
     },
     {
       value: "15",
       label: "Normal",
-      desc: "Espera un poco por si siguen escribiendo (15 segundos).",
+      desc: "Waits briefly in case they keep typing (15 seconds).",
       svg: SVG_CLOCK,
     },
     {
       value: "30",
-      label: "Pausado",
-      desc: "Espera más para juntar todo el mensaje (30 segundos).",
+      label: "Patient",
+      desc: "Waits longer to group the complete message (30 seconds).",
       svg: SVG_TURTLE,
     },
   ],
@@ -119,25 +119,25 @@ export const SPEED_CONTROL: ControlDef = {
 
 export const STYLE_CONTROL: ControlDef = {
   key: SETTING_KEYS.maxChunks,
-  title: "Estilo de mensajes",
-  help: "En cuántas burbujas parte su respuesta.",
+  title: "Message style",
+  help: "How many bubbles the reply is split into.",
   options: [
     {
       value: "1",
-      label: "Un mensaje",
-      desc: "Todo en una sola burbuja.",
+      label: "One message",
+      desc: "Everything in one bubble.",
       svg: SVG_ONE_BUBBLE,
     },
     {
       value: "3",
-      label: "2-3 cortos",
-      desc: "Parte la respuesta en pocas burbujas.",
+      label: "2–3 short",
+      desc: "Splits the reply into a few bubbles.",
       svg: SVG_TWO_BUBBLES,
     },
     {
       value: "5",
-      label: "Varios cortos",
-      desc: "Muchas burbujas cortas, estilo chat.",
+      label: "Several short",
+      desc: "Several short chat-style bubbles.",
       svg: SVG_MANY_BUBBLES,
     },
   ],
@@ -145,25 +145,25 @@ export const STYLE_CONTROL: ControlDef = {
 
 export const MODEL_CONTROL: ControlDef = {
   key: SETTING_KEYS.modelOverride,
-  title: "Cerebro del bot",
-  help: "Más barato vs más inteligente.",
+  title: "Bot brain",
+  help: "Cheaper versus smarter.",
   options: [
     {
       value: "haiku",
-      label: "Económico",
-      desc: "El más barato, ideal para preguntas simples.",
+      label: "Economical",
+      desc: "The least expensive, ideal for simple questions.",
       svg: SVG_FEATHER,
     },
     {
       value: "auto",
-      label: "Equilibrado",
-      desc: "Elige solo según la dificultad de cada mensaje.",
+      label: "Balanced",
+      desc: "Chooses based on the difficulty of each message.",
       svg: SVG_SCALE,
     },
     {
       value: "sonnet",
-      label: "Máximo",
-      desc: "El más inteligente, para conversaciones complejas.",
+      label: "Maximum",
+      desc: "The smartest, for complex conversations.",
       svg: SVG_BRAIN,
     },
   ],
@@ -171,19 +171,19 @@ export const MODEL_CONTROL: ControlDef = {
 
 export const STATUS_CONTROL: ControlDef = {
   key: SETTING_KEYS.botPaused,
-  title: "Estado",
-  help: "Encienda o apague el bot (ej. en vacaciones).",
+  title: "Status",
+  help: "Turn the bot on or off (for example, during vacation).",
   options: [
     {
       value: "0",
-      label: "Activo",
-      desc: "El bot responde a sus clientes.",
+      label: "Active",
+      desc: "The bot replies to customers.",
       svg: SVG_GREEN_DOT,
     },
     {
       value: "1",
-      label: "En pausa",
-      desc: "El bot no responde (útil en vacaciones).",
+      label: "Paused",
+      desc: "The bot does not reply (useful during vacation).",
       svg: SVG_PAUSE,
     },
   ],

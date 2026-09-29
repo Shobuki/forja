@@ -19,6 +19,37 @@ function makeConvId(channel: string, channelUserId: string): string {
 export class ConversationsRepo {
   constructor(private readonly db: Db) {}
 
+  /** Permanently remove website conversations and their conversation-scoped records. */
+  async deleteWebsiteChats(): Promise<{ conversations: number; messages: number }> {
+    const conversations =
+      (await this.db.first<{ n: number }>(
+        "SELECT COUNT(*) AS n FROM conversations WHERE channel = 'web'",
+      ))?.n ?? 0;
+    const messages =
+      (await this.db.first<{ n: number }>(
+        `SELECT COUNT(*) AS n FROM messages
+         WHERE conversation_id IN (SELECT id FROM conversations WHERE channel = 'web')`,
+      ))?.n ?? 0;
+
+    const webIds = "SELECT id FROM conversations WHERE channel = 'web'";
+    await this.db.d1.batch([
+      // Preserve lead/ticket records while removing their conversation link.
+      this.db.d1.prepare(`UPDATE leads SET conversation_id = NULL WHERE conversation_id IN (${webIds})`),
+      this.db.d1.prepare(`UPDATE tickets SET conversation_id = NULL WHERE conversation_id IN (${webIds})`),
+      this.db.d1.prepare(`DELETE FROM followup_sends WHERE conversation_id IN (${webIds})`),
+      this.db.d1.prepare(`DELETE FROM customer_facts WHERE conversation_id IN (${webIds})`),
+      this.db.d1.prepare(`DELETE FROM tracked_links WHERE conversation_id IN (${webIds})`),
+      this.db.d1.prepare(`DELETE FROM keyword_hits WHERE conversation_id IN (${webIds})`),
+      this.db.d1.prepare(`DELETE FROM conv_labels WHERE conversation_id IN (${webIds})`),
+      this.db.d1.prepare(`DELETE FROM template_sends WHERE conversation_id IN (${webIds})`),
+      this.db.d1.prepare(`DELETE FROM conversation_insights WHERE conversation_id IN (${webIds})`),
+      this.db.d1.prepare(`DELETE FROM messages WHERE conversation_id IN (${webIds})`),
+      this.db.d1.prepare("DELETE FROM conversations WHERE channel = 'web'"),
+    ]);
+
+    return { conversations, messages };
+  }
+
   async getOrCreate(
     channel: string,
     channelUserId: string,
@@ -29,7 +60,21 @@ export class ConversationsRepo {
       "SELECT * FROM conversations WHERE id = ?",
       [id],
     );
-    if (existing) return existing;
+    if (existing) {
+      // Website visitors identify themselves after the session cookie may already
+      // exist. Keep the first supplied name instead of leaving the row unnamed.
+      if (!existing.display_name && displayName?.trim()) {
+        await this.db.run(
+          "UPDATE conversations SET display_name = ? WHERE id = ?",
+          [displayName.trim().slice(0, 120), id],
+        );
+        return (await this.db.first<Conversation>(
+          "SELECT * FROM conversations WHERE id = ?",
+          [id],
+        ))!;
+      }
+      return existing;
+    }
 
     const now = Date.now();
     await this.db.run(

@@ -20,26 +20,26 @@ import { channelLabel } from "../../channels/labels";
 import { layout } from "./layout";
 import { fmtDateTime } from "../format";
 
-/** Tiempo relativo corto en español (ej. "hace 5 min", "hace 2 h", "hace 3 d"). */
+/** Short relative time in English (for example, "5 min ago", "2 hr ago"). */
 function ago(ms: number | null | undefined): string {
   if (!ms) return "";
   const diff = Date.now() - ms;
   const min = Math.floor(diff / 60_000);
-  if (min < 1) return "ahora";
-  if (min < 60) return `hace ${min} min`;
+  if (min < 1) return "now";
+  if (min < 60) return `${min} min ago`;
   const h = Math.floor(min / 60);
-  if (h < 24) return `hace ${h} h`;
+  if (h < 24) return `${h} hr ago`;
   const d = Math.floor(h / 24);
-  return `hace ${d} d`;
+  return `${d} day${d === 1 ? "" : "s"} ago`;
 }
 
 // Lead pill colors follow the design-system's own "Lead" example (accent) —
 // see docs/design-system.md §3 Pill/badge.
 const LEAD_BADGE: Record<string, { txt: string; color: string }> = {
-  new: { txt: "💰 Lead nuevo", color: "var(--accent)" },
-  contacted: { txt: "💬 Contactado", color: "var(--info)" },
-  sold: { txt: "✅ Vendido", color: "var(--ok)" },
-  lost: { txt: "✖ Perdido", color: "var(--dim)" },
+  new: { txt: "💰 New lead", color: "var(--accent)" },
+  contacted: { txt: "💬 Contacted", color: "var(--info)" },
+  sold: { txt: "✅ Sold", color: "var(--ok)" },
+  lost: { txt: "✖ Lost", color: "var(--dim)" },
 };
 
 // We reuse SENTIMENT_BADGE's `.txt` labels (insights.ts) but render inbox pills
@@ -203,7 +203,7 @@ export async function renderInboxList(env: Env, p: InboxParams): Promise<string>
       </a>`;
     })
     .join("") ||
-    `<div style="padding:32px 16px;text-align:center;font-size:12.5px;color:var(--dim)">Sin conversaciones${p.filter ? " con este filtro" : ""}.</div>`;
+    `<div style="padding:32px 16px;text-align:center;font-size:12.5px;color:var(--dim)">No conversations${p.filter ? " match this filter" : ""}.</div>`;
 
   return items;
 }
@@ -239,11 +239,11 @@ function bloqueContacto(canal: string | null | undefined, idCanal: string): stri
   const crudo = tel ? "+" + (idCanal ?? "").replace(/\D/g, "") : idCanal;
   const enlace = tel
     ? `<a href="https://api.whatsapp.com/send?phone=${encodeURIComponent((idCanal ?? "").replace(/\D/g, ""))}" target="_blank" rel="noopener"
-         title="Abrir este chat en tu WhatsApp" style="color:inherit;text-decoration:none;border-bottom:1px dotted currentColor">${escapeHtml(visible)}</a>`
+         title="Open this chat in WhatsApp" style="color:inherit;text-decoration:none;border-bottom:1px dotted currentColor">${escapeHtml(visible)}</a>`
     : escapeHtml(visible);
   return `<span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--dim)">
     ${enlace}
-    <button type="button" title="Copiar" aria-label="Copiar el contacto"
+    <button type="button" title="Copy" aria-label="Copy contact"
             onclick="navigator.clipboard.writeText('${crudo.replace(/'/g, "")}');this.textContent='✓';setTimeout(()=>this.textContent='⧉',1200)"
             style="background:none;border:none;color:inherit;cursor:pointer;font-size:11px;padding:0 2px;line-height:1">⧉</button>
   </span>`;
@@ -252,7 +252,7 @@ function bloqueContacto(canal: string | null | undefined, idCanal: string): stri
 export async function renderThreadLive(env: Env, convId: string): Promise<string> {
   const db = new Db(env.DB);
   const conv = await db.first<any>("SELECT * FROM conversations WHERE id = ?", [convId]);
-  if (!conv) return `<div style="padding:24px;font-size:12.5px;color:var(--dim)">Conversación no encontrada.</div>`;
+  if (!conv) return `<div style="padding:24px;font-size:12.5px;color:var(--dim)">Conversation not found.</div>`;
 
   const insight = await new InsightsRepo(db).getByConversation(convId);
   const msgs = await db.all<any>(
@@ -271,7 +271,7 @@ export async function renderThreadLive(env: Env, convId: string): Promise<string
   // Header: identity + live state + takeover controls.
   const statusColor = paused ? "var(--accent-2)" : "var(--ok)";
   const statusPill = `<span style="${statusBadge(statusColor)}">${
-    paused ? "⏸ bot pausado · tú tienes el control" : "🟢 bot activo"
+    paused ? "⏸ bot paused · you are in control" : "🟢 bot active"
   }</span>`;
 
   // "NEUTRAL" NO SE MUESTRA. El analizador clasifica cómo quedó el cliente en
@@ -295,30 +295,30 @@ export async function renderThreadLive(env: Env, convId: string): Promise<string
       <summary class="chip"
                hx-post="/admin/conversations/${encodeURIComponent(convId)}/resume"
                hx-swap="none"
-               title="Devolver el bot: vuelve a responder en este chat"
-               style="cursor:pointer;list-style:none;font-size:11px;color:var(--accent-2);background:var(--panel2);border:1px solid var(--linelit);padding:6px 11px;display:inline-flex;align-items:center;gap:6px">▸ Devolver bot</summary>
+               title="Return control to the bot"
+               style="cursor:pointer;list-style:none;font-size:11px;color:var(--accent-2);background:var(--panel2);border:1px solid var(--linelit);padding:6px 11px;display:inline-flex;align-items:center;gap:6px">▸ Resume bot</summary>
       <form method="POST" action="/admin/conversations/${encodeURIComponent(convId)}/resume"
             style="position:absolute;right:0;z-index:10;margin-top:8px;width:280px;background:var(--panel);border:1px solid var(--linelit);box-shadow:6px 6px 0 rgba(0,0,0,.4);padding:12px">
-        <p style="font-size:11px;color:var(--muted);margin:0 0 8px">Cuéntale al bot qué resolviste para que siga con contexto.</p>
-        <textarea name="summary" rows="3" required placeholder="Ej. Ya le confirmé su pago y le di acceso."
+        <p style="font-size:11px;color:var(--muted);margin:0 0 8px">Tell the bot what you resolved so it keeps the context.</p>
+        <textarea name="summary" rows="3" required placeholder="Example: I confirmed the payment and gave access."
                   style="width:100%;background:var(--bg);border:1px solid var(--line);color:var(--cream);padding:8px 10px;font-size:12px;outline:none;resize:vertical;margin-bottom:8px"></textarea>
-        <button class="bigbtn" style="width:100%;background:var(--accent);border:1px solid var(--accent);color:#1a1206;box-shadow:3px 3px 0 var(--linelit);padding:9px;font-size:12px;font-weight:700;font-family:'Space Grotesk';cursor:pointer">Enviar al bot</button>
+        <button class="bigbtn" style="width:100%;background:var(--accent);border:1px solid var(--accent);color:#1a1206;box-shadow:3px 3px 0 var(--linelit);padding:9px;font-size:12px;font-weight:700;font-family:'Space Grotesk';cursor:pointer">Send to bot</button>
       </form>
     </details>`
     : `
     <button hx-post="/admin/conversations/${encodeURIComponent(convId)}/pause" hx-target="#thread-live" hx-swap="innerHTML"
             class="chip" style="margin-left:auto;font-size:11px;color:var(--muted);background:var(--panel2);border:1px solid var(--linelit);padding:6px 11px;cursor:pointer">
-      ⏸ Pausar bot aquí
+      ⏸ Pause bot here
     </button>`;
 
   const header = `
   <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--panel)">
-    <span style="font-family:'Space Grotesk';font-weight:600;font-size:14px;color:var(--cream)">${escapeHtml(conv.display_name || "Sin nombre")}</span>
+    <span style="font-family:'Space Grotesk';font-weight:600;font-size:14px;color:var(--cream)">${escapeHtml(conv.display_name || "Unnamed contact")}</span>
     ${bloqueContacto(conv.channel, conv.channel_user_id)}
     <span style="${smallPill("var(--info)")}">${escapeHtml(channelLabel(conv.channel))}</span>
     ${statusPill}
     ${sentBadge}
-    ${openTicket > 0 ? `<span style="${statusBadge("var(--accent-2)")}">🔔 ticket abierto</span>` : ""}
+    ${openTicket > 0 ? `<span style="${statusBadge("var(--accent-2)")}">🔔 open ticket</span>` : ""}
     ${controls}
   </div>`;
 
@@ -355,7 +355,7 @@ export async function renderThreadLive(env: Env, convId: string): Promise<string
       const isOwner = m.role === "owner";
       const cost = turnCost(m);
       const meta = isOwner
-        ? `Tú · ${time}`
+        ? `You · ${time}`
         : [m.model_used ? modelShort(m.model_used) : null, cost || null, time].filter(Boolean).join(" · ");
       const bubbleBg = isOwner
         ? "background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.4)"
@@ -372,7 +372,7 @@ export async function renderThreadLive(env: Env, convId: string): Promise<string
   return `
   ${header}
   <div id="msgscroll" style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column-reverse;gap:12px;padding:16px;background:var(--bg)">
-    ${bubbles || `<div style="text-align:center;font-size:12.5px;color:var(--dim);padding:32px 0">Sin mensajes.</div>`}
+    ${bubbles || `<div style="text-align:center;font-size:12.5px;color:var(--dim);padding:32px 0">No messages.</div>`}
   </div>`;
 }
 
@@ -387,14 +387,14 @@ function renderComposer(convId: string): string {
           hx-on::after-request="if(event.detail.xhr.getResponseHeader('X-Sent')==='1')this.reset()"
           style="display:flex;align-items:flex-end;gap:9px">
       <textarea name="text" id="reply-text" rows="2" required
-                placeholder="Responde como humano — se envía por el canal del cliente y el bot se pausa…"
+                placeholder="Reply as a human — sent through the customer's channel and pauses the bot…"
                 style="flex:1;background:var(--bg);border:1px solid var(--line);color:var(--cream);padding:10px 12px;font-size:12.5px;resize:none;outline:none"></textarea>
       <button type="button" hx-post="/admin/conversations/${id}/suggest" hx-target="#suggestion-box" hx-swap="innerHTML"
-              class="chip" style="background:var(--panel2);border:1px solid var(--linelit);color:var(--accent-2);padding:11px 13px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:6px" title="El co-pilot sugiere una respuesta">
-        <i data-lucide="sparkles" width="13" height="13"></i> Sugerir
+              class="chip" style="background:var(--panel2);border:1px solid var(--linelit);color:var(--accent-2);padding:11px 13px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:6px" title="Copilot suggests a reply">
+        <i data-lucide="sparkles" width="13" height="13"></i> Suggest
       </button>
       <button type="submit" class="bigbtn" style="background:var(--accent);border:1px solid var(--accent);color:#1a1206;box-shadow:4px 4px 0 var(--linelit);padding:11px 18px;font-size:12.5px;font-weight:700;font-family:'Space Grotesk';cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:6px">
-        Enviar <i data-lucide="send" width="14" height="14"></i>
+        Send <i data-lucide="send" width="14" height="14"></i>
       </button>
     </form>
     <div id="send-status" style="font-size:11px;min-height:1rem;color:var(--muted)"></div>
@@ -406,12 +406,12 @@ export function renderSuggestionBox(text: string): string {
   return `
   <div style="border:1px solid var(--accent-2);background:rgba(245,166,35,.08);padding:10px 12px;font-size:12.5px;display:flex;align-items:flex-start;gap:10px">
     <div style="flex:1">
-      <div style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-2);margin-bottom:3px">✦ Sugerencia del co-pilot</div>
+      <div style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-2);margin-bottom:3px">✦ Copilot suggestion</div>
       <div class="sugg-text" style="white-space:pre-wrap;color:var(--cream)">${escapeHtml(text)}</div>
     </div>
     <button type="button"
             onclick="document.getElementById('reply-text').value=this.parentElement.querySelector('.sugg-text').textContent;document.getElementById('suggestion-box').innerHTML=''"
-            class="chip" style="font-size:11px;background:var(--accent-2);color:#1a1206;font-weight:700;border:1px solid var(--accent-2);padding:5px 10px;white-space:nowrap;cursor:pointer">Usar</button>
+            class="chip" style="font-size:11px;background:var(--accent-2);color:#1a1206;font-weight:700;border:1px solid var(--accent-2);padding:5px 10px;white-space:nowrap;cursor:pointer">Use</button>
   </div>`;
 }
 
@@ -422,6 +422,10 @@ export async function renderInbox(env: Env, p: InboxParams): Promise<string> {
   const now = Date.now();
 
   const totalConvs = (await db.first<{ n: number }>("SELECT COUNT(*) as n FROM conversations"))?.n ?? 0;
+  const websiteConvs =
+    (await db.first<{ n: number }>(
+      "SELECT COUNT(*) as n FROM conversations WHERE channel = 'web'",
+    ))?.n ?? 0;
   const totalLeads = (await db.first<{ n: number }>("SELECT COUNT(*) as n FROM leads"))?.n ?? 0;
   const nMolestos =
     (await db.first<{ n: number }>(
@@ -465,22 +469,27 @@ export async function renderInbox(env: Env, p: InboxParams): Promise<string> {
   } else {
     rightPane = `
       <div class="flex-1 flex items-center justify-center" style="font-size:12.5px;color:var(--dim);background:var(--bg)">
-        Selecciona una conversación para abrirla aquí.
+        Select a conversation to open it here.
       </div>`;
   }
 
   const body = `
     <div class="flex flex-wrap items-center gap-2" style="margin-bottom:14px">
-      ${filterPill(inboxUrl({ selectedId: p.selectedId }), `Todas · ${totalConvs}`, !p.filter, "var(--accent)")}
+      ${filterPill(inboxUrl({ selectedId: p.selectedId }), `All · ${totalConvs}`, !p.filter, "var(--accent)")}
       ${filterPill(inboxUrl({ filter: "leads", selectedId: p.selectedId }), `💰 Leads · ${totalLeads}`, p.filter === "leads", "var(--accent)")}
-      ${filterPill(inboxUrl({ filter: "atencion", selectedId: p.selectedId }), `🔔 Atención · ${needAttention}`, p.filter === "atencion", "var(--bad)")}
-      ${filterPill(inboxUrl({ filter: "molestos", selectedId: p.selectedId }), `😠 Molestos · ${nMolestos}`, p.filter === "molestos", "var(--bad)")}
-      ${filterPill(inboxUrl({ filter: "contentos", selectedId: p.selectedId }), `🙂 Contentos · ${nContentos}`, p.filter === "contentos", "var(--ok)")}
-      <form method="GET" action="/admin/conversations" class="ml-auto" style="display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);padding:7px 12px;min-width:220px">
+      ${filterPill(inboxUrl({ filter: "atencion", selectedId: p.selectedId }), `🔔 Attention · ${needAttention}`, p.filter === "atencion", "var(--bad)")}
+      ${filterPill(inboxUrl({ filter: "molestos", selectedId: p.selectedId }), `😠 Frustrated · ${nMolestos}`, p.filter === "molestos", "var(--bad)")}
+      ${filterPill(inboxUrl({ filter: "contentos", selectedId: p.selectedId }), `🙂 Positive · ${nContentos}`, p.filter === "contentos", "var(--ok)")}
+      <form method="POST" action="/admin/conversations/clear-web" style="margin-left:auto" onsubmit="return confirm('Delete all website conversations and their messages? This cannot be undone.')">
+        <button type="submit" class="chip" style="font-size:11px;letter-spacing:.03em;padding:5px 12px;white-space:nowrap;border:1px solid var(--bad);color:var(--bad);background:transparent;cursor:pointer">
+          Delete website chats Â· ${websiteConvs}
+        </button>
+      </form>
+      <form method="GET" action="/admin/conversations" style="display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);padding:7px 12px;min-width:220px">
         <i data-lucide="search" width="14" height="14" style="color:var(--dim)"></i>
         ${p.filter ? `<input type="hidden" name="f" value="${escapeHtml(p.filter)}">` : ""}
         ${p.selectedId ? `<input type="hidden" name="c" value="${escapeHtml(p.selectedId)}">` : ""}
-        <input name="q" value="${escapeHtml(p.search ?? "")}" placeholder="Buscar cliente…"
+        <input name="q" value="${escapeHtml(p.search ?? "")}" placeholder="Search customers…"
                style="flex:1;background:transparent;border:none;color:var(--cream);font-size:12px;outline:none">
       </form>
     </div>
@@ -497,5 +506,5 @@ export async function renderInbox(env: Env, p: InboxParams): Promise<string> {
       </div>
     </div>`;
 
-  return layout({ title: "Conversaciones", activeTab: "conversations", body, env });
+  return layout({ title: "Conversations", activeTab: "conversations", body, env });
 }

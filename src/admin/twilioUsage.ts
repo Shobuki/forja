@@ -28,20 +28,20 @@ export interface TwilioUsage {
 }
 
 const LABELS: Record<string, string> = {
-  "channels-messaging": "Mensajes (Twilio)",
-  "channels-whatsapp": "Conversaciones WhatsApp",
+  "channels-messaging": "Messages (Twilio)",
+  "channels-whatsapp": "WhatsApp conversations",
   "channels-whatsapp-conversation-marketing": "WhatsApp · marketing (Meta)",
-  "channels-whatsapp-conversation-utility": "WhatsApp · utilidad (Meta)",
-  "channels-whatsapp-conversation-authentication": "WhatsApp · autenticación (Meta)",
-  "channels-whatsapp-conversation-service": "WhatsApp · servicio (Meta)",
-  "channels-whatsapp-template-marketing": "Plantilla WhatsApp · marketing",
-  "channels-whatsapp-template-utility": "Plantilla WhatsApp · utilidad",
-  "phonenumbers-local": "Renta de número(s)",
-  "phonenumbers": "Renta de número(s)",
-  "phonenumbers-mobile": "Renta de número(s) móvil",
-  "smsmessages-outbound-domestic": "SMS salientes",
-  "mms-outbound": "MMS salientes",
-  "recordings": "Grabaciones",
+  "channels-whatsapp-conversation-utility": "WhatsApp · utility (Meta)",
+  "channels-whatsapp-conversation-authentication": "WhatsApp · authentication (Meta)",
+  "channels-whatsapp-conversation-service": "WhatsApp · service (Meta)",
+  "channels-whatsapp-template-marketing": "WhatsApp template · marketing",
+  "channels-whatsapp-template-utility": "WhatsApp template · utility",
+  "phonenumbers-local": "Phone number rental",
+  "phonenumbers": "Phone number rental",
+  "phonenumbers-mobile": "Mobile number rental",
+  "smsmessages-outbound-domestic": "Outbound SMS",
+  "mms-outbound": "Outbound MMS",
+  "recordings": "Recordings",
 };
 
 function friendly(cat: string): string {
@@ -65,7 +65,7 @@ export async function fetchTwilioUsage(
 ): Promise<TwilioUsage> {
   const sid = env.TWILIO_ACCOUNT_SID;
   const tok = env.TWILIO_AUTH_TOKEN;
-  if (!sid || !tok) return EMPTY(period, "Twilio no está configurado en este bot.");
+  if (!sid || !tok) return EMPTY(period, "Twilio is not configured for this bot.");
 
   try {
     const url = `https://api.twilio.com/2010-04-01/Accounts/${sid}/Usage/Records/${period}.json?PageSize=250`;

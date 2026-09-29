@@ -6,13 +6,13 @@ export function renderBusinessContext(cfg: BusinessConfig = businessConfig): str
   // Cada línea es opcional: si el miembro saltó ese dato en el onboarding, no la
   // metemos (evita "Servicios y precios:" o "Métodos de pago:" vacíos en el prompt).
   const lines: string[] = [];
-  if (cfg.hours) lines.push(`Horarios: ${cfg.hours}`);
+  if (cfg.hours) lines.push(`Hours: ${cfg.hours}`);
   if (cfg.services?.length) {
-    lines.push(`Servicios y precios:\n${cfg.services.map((s) => `${s.name}: $${s.price}`).join("\n")}`);
+    lines.push(`Services and prices:\n${cfg.services.map((s) => `${s.name}: $${s.price}`).join("\n")}`);
   }
-  if (cfg.location) lines.push(`Ubicación: ${cfg.location}`);
-  if (cfg.paymentMethods?.length) lines.push(`Métodos de pago: ${cfg.paymentMethods.join(", ")}`);
-  if (cfg.contactPhone) lines.push(`Teléfono: ${cfg.contactPhone}`);
+  if (cfg.location) lines.push(`Location: ${cfg.location}`);
+  if (cfg.paymentMethods?.length) lines.push(`Payment methods: ${cfg.paymentMethods.join(", ")}`);
+  if (cfg.contactPhone) lines.push(`Phone: ${cfg.contactPhone}`);
   for (const [k, v] of Object.entries(cfg.customFields ?? {})) {
     if (v) lines.push(`${k}: ${v}`);
   }
